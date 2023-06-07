@@ -1,0 +1,69 @@
+---
+title: "start"
+output: html_document
+date: "2023-06-06"
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+Full Data Set
+```{r}
+library(readxl)
+course_reg_full <- read_excel("course_reg_14_23.xlsx")
+```
+
+
+Condense the Data Set to DATA, MATH, STAT, CS
+```{r}
+course_reg_data <- course_reg_full |> filter(Subject == "MATH" | 
+                                               Subject == "STAT" | 
+                                               Subject == "DATA" | 
+                                               Subject == "CS") |>
+  select(`Acad Year Term`, `Reporting Year`, `Course ID`, `Course Name`, `Subject`, `Course Number`, `Course Title`, `Enrolled`, `xlist Primary Course`, `xlist Section1`, `xlist Section2`, `xlist Section3`, `xlist Section4`) |> arrange(desc(`Reporting Year`))
+```
+
+Combine Enrollment numbers
+```{r}
+course_reg_data <- course_reg_data |> 
+  group_by(`Course ID`, `Acad Year Term`) |> 
+  summarize(Enrolled = sum(Enrolled),
+            `Reporting Year` = first(`Reporting Year`),
+            `Course Title` = first(`Course Title`)) |> 
+  arrange(`Reporting Year`)
+```
+
+Static test plot
+```{r}
+test_data <- course_reg_data |> filter(`Course ID` == 1096)
+ggplot(data = test_data, aes(x = `Acad Year Term`, y = Enrolled, group = 1)) +
+  geom_line() +
+  geom_point()
+```
+
+
+
+
+Plot by semester
+```{r}
+ggplot(data = course_reg_data, aes(x = `Acad Year Term`, y = Enrolled)) +
+  geom_point()
+```
+
+
+
+Split semester and year into two columns
+This data contains enrollment by semester
+```{r}
+course_reg_split <- course_reg_data |> separate(col = `Acad Year Term`, into = c("Year", "Semester"), sep = -2) |> arrange(`Reporting Year`)
+```
+
+
+
+
+
+
+
+
