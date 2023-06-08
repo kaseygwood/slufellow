@@ -33,7 +33,6 @@ course_reg_data <- course_reg_data |>
             `Reporting Year` = first(`Reporting Year`),
             `Course Title` = first(`Course Title`)) |> 
   arrange(`Reporting Year`)
-View(course_reg_data)
 ```
 
 Static test plot
@@ -93,7 +92,7 @@ course_reg_split <- course_reg_data |> separate(col = `Acad Year Term`, into = c
 ```
 
 ```{r}
-View(course_reg_data)
+write_csv
 ```
 
 

@@ -1,0 +1,32 @@
+---
+title: "Static Graphics"
+output: html_document
+date: "2023-06-08"
+---
+
+
+```{r}
+library(tidyverse)
+library(readr)
+
+course_reg_data <- read_csv("course_reg_data.csv")
+```
+
+yearly graph
+```{r}
+test_min <- course_reg_data |> filter(course == "A Bridge to Higher Math")
+ggplot(data = test_min, aes(x = reporting_year, y = yearly_enrolled)) +
+  geom_line() +
+  geom_point()
+```
+
+semester graph
+```{r}
+ggplot(data = test_min, aes(x = reporting_year)) +
+  geom_line(aes(y = FA)) +
+  geom_point(aes(y = FA)) +
+  geom_line(aes(y = SP)) +
+  geom_point(aes(y = SP)) +
+  labs(x = "Year", y = "Enrollment")
+```
+
