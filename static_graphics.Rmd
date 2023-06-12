@@ -30,3 +30,20 @@ ggplot(data = test_min, aes(x = reporting_year)) +
   labs(x = "Year", y = "Enrollment")
 ```
 
+```{r}
+test_max <- course_reg_data |> 
+  pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+  filter(course == "A Bridge to Higher Math") |> 
+  mutate(order = case_when(
+  semester == "SP" ~ as.numeric(reporting_year),
+  semester == "FA" ~ as.numeric(reporting_year) + 1)) |> 
+  unite("term", c(reporting_year, semester)) |>
+  mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+
+ggplot(data = test_max, aes(x= term, y = semester_enrolled, group = 1)) +
+  geom_line()+
+  geom_point()+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
