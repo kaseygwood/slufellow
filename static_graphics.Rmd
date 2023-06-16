@@ -31,19 +31,41 @@ ggplot(data = test_min, aes(x = reporting_year)) +
 ```
 
 ```{r}
-test_max <- course_reg_data |> 
+test_max <- course_reg_data |> rename("FA" = "fall_enrolled",
+                                      "SP" = "spring_enrolled") |>
   pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
-  filter(course == "A Bridge to Higher Math") |> 
+  filter(course == "Algorithm Analysis") |> 
   mutate(order = case_when(
   semester == "SP" ~ as.numeric(reporting_year),
   semester == "FA" ~ as.numeric(reporting_year) + 1)) |> 
   unite("term", c(reporting_year, semester)) |>
   mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+test_max <- test_max |> filter(semester_enrolled != 0)
+View(test_max)
 
+```
+
+
+ADDING SECTION POINTS TO GRAPHIC
+```{r}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg <- course_reg_data |> pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg <- course_reg |> separate(col = semester, into = c("semester", "section"), sep = "_")
+course_reg <- course_reg |> unite("term", c(reporting_year, semester))
+course_reg <- course_reg |> filter(course== "Algorithm Analysis")
+View(course_reg)
+```
+
+```{r}
 ggplot(data = test_max, aes(x= term, y = semester_enrolled, group = 1)) +
   geom_line()+
   geom_point()+
+  scale_x_discrete(limits = levels(test_max$term)) +
+  geom_point(data = course_reg, aes(x = term, y = enrolled, group = 1), alpha = 0.5) +
   theme(axis.text.x = element_text(angle = 90))
 ```
+
+
 
 
