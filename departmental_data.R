@@ -1,4 +1,5 @@
 library(tidyverse)
+
 library(readxl)
 
 course_reg_full <- read_excel("course_reg_14_23.xlsx")
@@ -11,7 +12,7 @@ course_reg_data <- course_reg_full |> filter(Subject == "MATH" |
          `Subject`, `Course Number`, `Course Title`, `Enrolled`, 
          `xlist Primary Course`, `xlist Section1`, `xlist Section2`, 
          `xlist Section3`, `xlist Section4`, `Section Number`) |> arrange(desc(`Reporting Year`))
-
+View(course_reg_data)
 course_reg_data <- course_reg_data |> separate(col = `Acad Year Term`, into = c("reporting_year", "semester"), sep = -2) 
 course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Number`))
 course_reg_data <- course_reg_data |> group_by(`Course Title`, `Reporting Year`) |> 
@@ -57,7 +58,9 @@ course_reg_data <- course_reg_data |>
             FA_20 = sum(FA_20, na.rm = TRUE),
             FA_21 = sum(FA_21, na.rm = TRUE),
             FA_22 = sum(FA_22, na.rm = TRUE),
-            FA_23 = sum(FA_23, na.rm = TRUE))
+            FA_23 = sum(FA_23, na.rm = TRUE),
+            `Course Number` = first(`Course Number`),
+            Subject = first(Subject))
 
 View(course_reg_data)
 course_reg_data <- course_reg_data |>
@@ -110,8 +113,10 @@ course_reg_data <- course_reg_data |>
             FA_20 = first(FA_20),
             FA_21 = first(FA_21),
             FA_22 = first(FA_22),
-            FA_23 = first(FA_23))
-  
+            FA_23 = first(FA_23),
+            `Course Number` = first(`Course Number`),
+            Subject = first(Subject))
+
 View(course_reg_data)
 
 write_csv(course_reg_data, "course_reg_data.csv")

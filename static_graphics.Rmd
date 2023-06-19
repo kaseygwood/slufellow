@@ -67,5 +67,106 @@ ggplot(data = test_max, aes(x= term, y = semester_enrolled, group = 1)) +
 ```
 
 
+fixing the graph to be a cumulative sum
+```{r}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_")
+course_reg_section <- course_reg_section |> mutate(year = reporting_year) |>
+  unite("term", c(reporting_year, semester))
+course_reg_section <- course_reg_section |> group_by(course, term) |> 
+  mutate(cumulative_enrolled = cumsum(enrolled)) |> filter(course == "A Bridge to Higher Math")
+course_app_section3 <- course_reg_section |> group_by(term) |> summarise(total_sections = n())
+course_reg_section <- left_join(course_reg_section, course_app_section3, by = c("term"))
+
+```
+
+```{r}
+ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, label = semester_enrolled, group = 1)) +
+          geom_line() +
+          geom_point() +
+          geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, label = enrolled, group = 1), alpha = 0.25) +
+          theme(axis.text.x = element_text(angle = 90)) 
+```
+
+
+
+graphing enrollment by level of course in each discipline
+
+```{r}
+test <- course_reg_data |> mutate(level = case_when(
+  as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 1000 - 1,
+  as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100)) |> na.omit(level)
+test <- test |> filter(Subject == "MATH")
+test <- test |> group_by(level, reporting_year) |> summarise(enrolled = sum(yearly_enrolled))
+test1<- test |> filter(level == 1)
+ggplot(data = test, aes(x = reporting_year, y = enrolled, color = factor(level))) +
+  geom_point() +
+  geom_line()+
+  labs(color ="Course Level") +
+  theme_minimal()
+```
+
+```{r}
+course_app_yearly <- course_reg_data |> filter(course == "A Bridge to Higher Math")
+course_reg_section <- course_reg_section |> group_by(year) |> summarise(total_sections = n()) |> rename("reporting_year"="year")
+newdata <- left_join(course_app_yearly, course_reg_section,
+          by= c("reporting_year"))
+plot1 <- ggplot(data = newdata, aes(x = reporting_year, y = yearly_enrolled, group = 1, label = total_sections)) +
+       geom_line() +
+       geom_point() +
+       labs(
+       x = "Year",
+       y = "Enrollment") + 
+       theme_minimal()+
+       theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust=1))
+ggplotly(plot1)
+```
+
+```{r}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_app_semester <- course_reg_data |> 
+          rename("FA" = "fall_enrolled",
+                 "SP" = "spring_enrolled")|>
+          pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+          filter(course == "A Bridge to Higher Math") |> 
+          mutate(order = case_when(
+            semester == "SP" ~ reporting_year,
+            semester == "FA" ~ reporting_year + 1)) |> 
+          unite("term", c(reporting_year, semester)) |>
+          mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+course_app_semester <- course_app_semester |>
+          filter(semester_enrolled != 0)
+course_app_section <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
+course_app_section <- course_app_section |> 
+          filter(course == `A Bridge to Higher Math`)|>
+          filter(enrolled != 0)
+course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
+course_app_semester <- left_join(course_app_semester, course_app_section3,
+                                         by = c("term"))
+plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1, label = total_sections)) +
+          geom_line() +
+          geom_point() +
+          geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, group = 1, label = section), alpha = 0.25, shape = 45)+
+          geom_segment(data = course_app_section, aes(x = term, xend = term, y = 0, yend = cumulative_enrolled), color = "gray", alpha = 0.25) +
+          geom_text(data = course_app_section, aes(x = term, y = cumulative_enrolled - 5, label = section), angle = 90,
+                    alpha = 0.5, size = 2,
+                    hjust = 0, vjust = 0.5, nudge_x= -0.2) +
+          scale_x_discrete(limits = levels(course_app_semester$term)) +
+          scale_y_continuous(limits = c(0, max(course_app_semester$semester_enrolled))) +
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                axis.text.y = element_text(hjust = 1))
+ggplotly(plot1, tooltip = c("y", "label"))
+```
+
+
+
+
+
+
+
 
 
