@@ -18,8 +18,9 @@ ui <- fluidPage(
                    radioButtons("time", "Graph by year or by semester?",
                                 choices = c("Year", "Semester")),
                    selectInput("courses", label = "Select a Course", 
-                                choices = course_reg_data$course,
-                                selected = "Applied Statistics")),
+                                choices = unique(course_reg_data$course),
+                                selected = "Applied Statistics"),
+                   uiOutput("addSections")),
                mainPanel(plotlyOutput(outputId = "plot")
              ))
     ), # course tabPanel
@@ -39,6 +40,12 @@ server <- function(input, output, session) {
   # plot enrollment by semester
   output$plot <- renderPlotly({
     if ( input$courses %in% course_reg_data$course){
+      addSections <- reactive({
+        if (input$time == "Semester"){
+          radioButtons("sections", "Add Sections?",
+                       choices = "add sections")
+        }
+      })
       if (input$time == "Semester"){
         course_app_semester <- course_reg_data |> 
           rename("FA" = "fall_enrolled",
@@ -59,9 +66,9 @@ server <- function(input, output, session) {
         course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
         course_app_semester <- left_join(course_app_semester, course_app_section3,
                                          by = c("term"))
-        plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, label = total_sections, group = 1)) +
+        plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
           geom_line() +
-          geom_point() +
+          geom_point(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
           geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, group = 1), alpha = 0.25, shape = 45)+
           geom_segment(data = course_app_section, aes(x = term, xend = term, y = 0, yend = cumulative_enrolled), color = "gray", alpha = 0.25) +
           geom_text(data = course_app_section, aes(x = term, y = cumulative_enrolled - 5, label = section), angle = 90,
@@ -76,7 +83,8 @@ server <- function(input, output, session) {
           theme_minimal() +
           theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
                 axis.text.y = element_text(hjust = 1))
-        ggplotly(plot1, tooltip = c("y", "label"))
+        ggplotly(plot1) |> style(hoverinfo = "none",
+                                                            traces = c(4,5))
       }
       else if (input$time == "Year"){
         course_app_yearly <- course_reg_data |> filter(course %in% input$courses)
@@ -115,6 +123,7 @@ server <- function(input, output, session) {
     }
   }) # end discipline plotly
   } # end server
+
 
 
 shinyApp(ui, server)
