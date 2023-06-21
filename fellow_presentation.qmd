@@ -1,0 +1,60 @@
+---
+title: "Visualizing and Analyzing St. Lawrence University Registration Data"
+format: revealjs
+editor: visual
+---
+
+## So Far
+
+-   wrangling and tidying the data using tidyverse
+-   creating visualizations that show enrollment information for the MATH/CS/DATA/STAT Department
+
+## The Original Data
+
+-   **Acad Year Term**
+-   **Reporting Year**
+-   Course Key
+-   Course ID
+-   Course Section ID
+-   Course Section Name
+-   **Course Name**
+-   **Subject**
+
+## The Original Data
+-   **Course Number**
+-   **Section Number**
+-   Course Title
+-   Credits
+-   xlist Primary Course, xlist Section1, xlist Section2, xlist Section3, xlist Section4
+-   **Enrolled**
+-   Instructor1, Instructor2, Instructor3, Instructor4,
+-   Course Level1, Course Level Desc1, Course Level2 Course Level Desc2, Course Level3, Course Level Desc3, Course Level4, Course Level Desc4 Course Level5, Course Level Desc5, Course Level6, Course Level Desc6 Course Level7, Course Level Desc7, Course Level8, Course Level Desc8 Course Level9, Course Level Desc9, Course Level10, Course Level Desc10, - Schedule Type, Course Type1, Building1, Room1, Days1, Start Time1, End Time1, Course Type2, Building2, Room2, Days2, Start Time2, End Time2, Course Type3, Building3, Room3, Days3, Start Time3, End Time3
+
+## The Data
+
+```{r}
+library(readr)
+course_reg_data <- read_csv("course_reg_data.csv")
+head(course_reg_data)
+```
+
+- New Variables:
+  - yearly_enrolled, fall_enrolled, spring_enrolled
+  
+## The Data
+```{r}
+library(tidyverse)
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
+head(course_reg_section)
+```
+
+
+## Goals
+
+-   analyzing and visualizing open seats in classes for students
+-   extending the app to other departments
+-   time-series analysis of enrollment over time, with forecasts for the future
