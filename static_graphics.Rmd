@@ -84,11 +84,12 @@ course_reg_section <- left_join(course_reg_section, course_app_section3, by = c(
 ```
 
 ```{r}
-ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, label = semester_enrolled, group = 1)) +
+plot <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, label = semester_enrolled, group = 1)) +
           geom_line() +
           geom_point() +
           geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, label = enrolled, group = 1), alpha = 0.25) +
           theme(axis.text.x = element_text(angle = 90)) 
+ggplotly(plot)
 ```
 
 
@@ -141,17 +142,21 @@ course_app_semester <- course_app_semester |>
           filter(semester_enrolled != 0)
 course_app_section <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
 course_app_section <- course_app_section |> 
-          filter(course == `A Bridge to Higher Math`)|>
+          filter(course == "A Bridge to Higher Math")|>
           filter(enrolled != 0)
 course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
 course_app_semester <- left_join(course_app_semester, course_app_section3,
                                          by = c("term"))
-plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1, label = total_sections)) +
+course_app_semester <- course_app_semester |> mutate(avg_section = semester_enrolled / total_sections)
+plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
           geom_line() +
-          geom_point() +
-          geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, group = 1, label = section), alpha = 0.25, shape = 45)+
-          geom_segment(data = course_app_section, aes(x = term, xend = term, y = 0, yend = cumulative_enrolled), color = "gray", alpha = 0.25) +
-          geom_text(data = course_app_section, aes(x = term, y = cumulative_enrolled - 5, label = section), angle = 90,
+          geom_point(data=course_app_semester,aes(x = term, y = semester_enrolled, label = total_sections)) +
+          geom_point(data = course_app_section, 
+                     aes(x = term, y = cumulative_enrolled, group = 1),
+                     alpha = 0.25, shape = 45, show.legend = FALSE)+
+          geom_text(data = course_app_section, 
+                    aes(x = term, y = cumulative_enrolled - 5, label = section), 
+                    angle = 90,
                     alpha = 0.5, size = 2,
                     hjust = 0, vjust = 0.5, nudge_x= -0.2) +
           scale_x_discrete(limits = levels(course_app_semester$term)) +
@@ -159,8 +164,36 @@ plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled,
           theme_minimal() +
           theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
                 axis.text.y = element_text(hjust = 1))
-ggplotly(plot1, tooltip = c("y", "label"))
+ggplotly(plot1, tooltip = c("y", "label")) |> style(hoverinfo = "none", traces = c(1,3,4))
+
+plot2 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1, label = total_sections)) +
+          geom_line() +
+          geom_point() +
+          scale_x_discrete(limits = levels(course_app_semester$term)) +
+          scale_y_continuous(limits = c(0, max(course_app_semester$semester_enrolled))) +
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                axis.text.y = element_text(hjust = 1))
+ggplotly(plot2)
+
+plot3 <- ggplot(data = course_app_semester, aes(x = term, y = avg_section, group = 1, label = total_sections)) +
+          geom_line() +
+          geom_point() +
+          scale_x_discrete(limits = levels(course_app_semester$term)) +
+          scale_y_continuous(limits = c(0, max(course_app_semester$semester_enrolled))) +
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                axis.text.y = element_text(hjust = 1))
+ggplotly(plot3)
 ```
+
+```{r}
+
+```
+
+
+
+
 
 
 

@@ -4,6 +4,12 @@ library(readxl)
 
 course_reg_full <- read_excel("course_reg_14_23.xlsx")
 
+
+course_capacity <- read_excel("Course Capacity.xlsx")
+course_capacity <- course_capacity |> rename("Course Section Name" = "Section Name") |> 
+  rename("Course Section ID" = "Section ID") |> select(-"Section Number") |> select(-"...5")
+
+course_reg_full <- left_join(course_reg_full, course_capacity, by = "Course Section ID")
 course_reg_data <- course_reg_full |> filter(Subject == "MATH" | 
                                                Subject == "STAT" | 
                                                Subject == "DATA" | 
@@ -11,14 +17,14 @@ course_reg_data <- course_reg_full |> filter(Subject == "MATH" |
   select(`Acad Year Term`, `Reporting Year`, `Course ID`, `Course Name`, 
          `Subject`, `Course Number`, `Course Title`, `Enrolled`, 
          `xlist Primary Course`, `xlist Section1`, `xlist Section2`, 
-         `xlist Section3`, `xlist Section4`, `Section Number`) |> arrange(desc(`Reporting Year`))
-View(course_reg_data)
+         `xlist Section3`, `xlist Section4`, `Section Number`, `Section Capacity`) |> arrange(desc(`Reporting Year`))
 course_reg_data <- course_reg_data |> separate(col = `Acad Year Term`, into = c("reporting_year", "semester"), sep = -2) 
-course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Number`))
-course_reg_data <- course_reg_data |> group_by(`Course Title`, `Reporting Year`) |> 
+course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Number`)) |>
+  unite("course", c(`Course Name`, `Course Title`), sep = ": ")
+course_reg_data <- course_reg_data |> group_by(course, `Reporting Year`) |> 
   pivot_wider(names_from = section, values_from = Enrolled) |> 
   select(-reporting_year) |>
-  rename("reporting_year" = "Reporting Year") |> rename("course" = "Course Title")
+  rename("reporting_year" = "Reporting Year")
 course_reg_data <- course_reg_data |>
   group_by(course, reporting_year) |>
   summarize(FA_01 = sum(FA_01, na.rm = TRUE),
@@ -60,9 +66,8 @@ course_reg_data <- course_reg_data |>
             FA_22 = sum(FA_22, na.rm = TRUE),
             FA_23 = sum(FA_23, na.rm = TRUE),
             `Course Number` = first(`Course Number`),
-            Subject = first(Subject))
-
-View(course_reg_data)
+            Subject = first(Subject),
+            `Section Capacity` = first(`Section Capacity`))
 course_reg_data <- course_reg_data |>
   group_by(course, reporting_year) |>
   summarize(yearly_enrolled = sum(FA_01 + SP_01 + FA_02 + SP_02 + FA_03 + SP_03 +
@@ -115,9 +120,9 @@ course_reg_data <- course_reg_data |>
             FA_22 = first(FA_22),
             FA_23 = first(FA_23),
             `Course Number` = first(`Course Number`),
-            Subject = first(Subject))
-
-View(course_reg_data)
+            Subject = first(Subject),
+            `Section Capacity` = first(`Section Capacity`)) |>
+  rename("capacity" = "Section Capacity")
 
 write_csv(course_reg_data, "course_reg_data.csv")
 
