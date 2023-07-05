@@ -19,15 +19,46 @@ course_reg_data <- course_reg_full |> filter(Subject == "MATH" |
          `xlist Primary Course`, `xlist Section1`, `xlist Section2`, 
          `xlist Section3`, `xlist Section4`, `Section Number`, `Section Capacity`) |> arrange(desc(`Reporting Year`))
 course_reg_data <- course_reg_data |> separate(col = `Acad Year Term`, into = c("reporting_year", "semester"), sep = -2) 
-course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Number`)) |>
-  unite("course", c(`Course Name`, `Course Title`), sep = ": ")
+
+
+#course_reg_data <- course_reg_data |> unite("course", c(`Course Name`, `Course Title`), sep = ": ") |> group_by(course, semester, `Reporting Year`) |>
+  #mutate(semester_capacity = sum(`Section Capacity`, na.rm = TRUE))
+
+course_reg_fall <- course_reg_data |> unite("course", c(`Course Name`, `Course Title`), sep = ": ") |> 
+  filter(semester == "FA") |>
+  group_by(course, `Reporting Year`) |>
+  mutate(fall_capacity = sum(`Section Capacity`, na.rm = TRUE))
+
+course_reg_spring <- course_reg_data |> unite("course", c(`Course Name`, `Course Title`), sep = ": ") |>
+  filter(semester == "SP") |>
+  group_by(course, `Reporting Year`) |>
+  mutate(spring_capacity = sum(`Section Capacity`, na.rm = TRUE))
+
+course_reg_data <- full_join(course_reg_fall, course_reg_spring)
+course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Number`)) 
+
+# fixing cross-listed courses
+course_reg_xlist <- course_reg_data |> drop_na(`xlist Section1`)
+course_reg_xlist <- course_reg_xlist |> separate(col = course, into = c("course", "course_title"), sep = ": ")
+course_reg_xlist <- course_reg_xlist |> group_by(course_title, section, `Reporting Year`) |> mutate(enrolled = sum(Enrolled)) |> select(-Enrolled) |> rename("Enrolled" = "enrolled") |>
+  unite("course", c(course, course_title), sep = ": ")
+course_reg_noxlist <- course_reg_data |> filter(is.na(`xlist Section1`))
+course_reg_data <- full_join(course_reg_xlist, course_reg_noxlist)
+
+course_reg_data <- course_reg_data |> group_by(course, `Reporting Year`) |>
+  mutate(yearly_capacity = sum(`Section Capacity`, na.rm = TRUE))
 course_reg_data <- course_reg_data |> group_by(course, `Reporting Year`) |> 
-  pivot_wider(names_from = section, values_from = Enrolled) |> 
+  pivot_wider(names_from = section, values_from = Enrolled) |>
   select(-reporting_year) |>
   rename("reporting_year" = "Reporting Year")
+
+
 course_reg_data <- course_reg_data |>
   group_by(course, reporting_year) |>
-  summarize(FA_01 = sum(FA_01, na.rm = TRUE),
+  summarize(yearly_capacity = first(yearly_capacity),
+            fall_capacity = first(fall_capacity),
+            spring_capacity = first(spring_capacity),
+            FA_01 = sum(FA_01, na.rm = TRUE),
             FA_02 = sum(FA_02, na.rm = TRUE),
             FA_03 = sum(FA_03, na.rm = TRUE),
             FA_04 = sum(FA_04, na.rm = TRUE),
@@ -66,8 +97,7 @@ course_reg_data <- course_reg_data |>
             FA_22 = sum(FA_22, na.rm = TRUE),
             FA_23 = sum(FA_23, na.rm = TRUE),
             `Course Number` = first(`Course Number`),
-            Subject = first(Subject),
-            `Section Capacity` = first(`Section Capacity`))
+            Subject = first(Subject))
 course_reg_data <- course_reg_data |>
   group_by(course, reporting_year) |>
   summarize(yearly_enrolled = sum(FA_01 + SP_01 + FA_02 + SP_02 + FA_03 + SP_03 +
@@ -121,11 +151,12 @@ course_reg_data <- course_reg_data |>
             FA_23 = first(FA_23),
             `Course Number` = first(`Course Number`),
             Subject = first(Subject),
-            `Section Capacity` = first(`Section Capacity`)) |>
-  rename("capacity" = "Section Capacity")
+            yearly_capacity = first(yearly_capacity),
+            fall_capacity = first(fall_capacity),
+            spring_capacity = first(spring_capacity)) 
 
 write_csv(course_reg_data, "course_reg_data.csv")
-
+View(course_reg_data)
 #course_reg_data_yearly <- course_reg_data |> group_by(course, reporting_year) |>
  # summarize(Enrolled = sum(Enrolled),
    #         course = first(course)) |>

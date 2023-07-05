@@ -197,11 +197,19 @@ server <- function(input, output, session) {
     if (input$discipline %in% course_reg_data$Subject){
       subject_data <- course_reg_data |> mutate(level = case_when(
         as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 1000 - 1,
-        as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100)) |> na.omit(level)
+        as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100))
       subject_data <- subject_data |> filter(Subject %in% input$discipline)
       subject_data <- subject_data |> group_by(level, reporting_year) |> summarise(enrolled = sum(yearly_enrolled))
       subject_data <- subject_data |> filter(level <= 3)
-      subject_plot<- ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(level))) +
+      section_total <- course_reg_section |> mutate(level = case_when(
+        as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 1000 - 1,
+        as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100))
+      section_total <- section_total |> filter(Subject %in% input$discipline)
+      section_total <- section_total |> group_by(year, level) |> summarise(total_sections = n()) |> rename("reporting_year" = "year")
+      section_total <- section_total |> filter(level <=3)
+      subject_data <- left_join(subject_data, section_total, by = c("reporting_year", "level"))
+      subject_data <- subject_data |> mutate(avg_section = round((enrolled/total_sections)))
+      subject_plot<- ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(level), label = total_sections, label2 = avg_section)) +
         geom_point() +
         geom_line() +
         scale_y_continuous(limits = c(0, max(subject_data$enrolled))) +
@@ -231,11 +239,10 @@ server <- function(input, output, session) {
       course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
       course_app_semester <- left_join(course_app_semester, course_app_section3,
                                        by = c("term"))
-      course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))|>
-        mutate(term = fct_reorder(term, order, .desc = FALSE)) |> mutate(total_capacity = capacity*total_sections)
+      course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
       plot1 <- ggplot(data = course_app_semester, aes(x = term)) +
         geom_col(aes(y = semester_enrolled, fill = "Enrollment")) +
-        geom_col(aes(y = total_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
+        geom_col(aes(y = semester_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
         scale_fill_grey()+
         labs(
           x = "Year",
@@ -252,23 +259,26 @@ server <- function(input, output, session) {
         group_by(year) |> summarise(total_sections = n()) |> rename("reporting_year"="year")
       course_app_yearly <- left_join(course_app_yearly, course_reg_section,
                            by= c("reporting_year"))
-      course_app_yearly <- course_app_yearly |> mutate(total_capacity = capacity*total_sections)
-      plot1 <- ggplot(data = course_app_yearly, aes(x = reporting_year)) +
+      course_app_yearly <- course_app_yearly |> mutate(avg_section = round((yearly_enrolled/total_sections)))
+      plot1 <- ggplot(data = course_app_yearly, aes(x = reporting_year), label = total_sections, label2 = avg_section) +
         geom_col(aes(y = yearly_enrolled, fill = "Enrollment")) +
-        geom_col(aes(y = total_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
-        scale_fill_grey()+
+        geom_col(aes(y = yearly_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
+        scale_fill_grey() +
         labs(
           x = "Year",
           y = "Enrollment",
           fill = "") + 
         theme_minimal()+
         theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust=1))
-      ggplotly(plot1)
+      ggplotly(plot1, tooltip = c("label", "y", "label2"))
     }
-  }) # end openseats plotly
+  }) # end openseats plot
+
   } # end server
 
 # add number of sections to discipline graph
 
 shinyApp(ui, server)
+
+
 
