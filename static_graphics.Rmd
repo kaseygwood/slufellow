@@ -225,6 +225,26 @@ View(course_app_semester)
 ```
 
 
+```{r}
+course_app_semester <- course_reg_data |> 
+        rename("FA" = "fall_enrolled",
+               "SP" = "spring_enrolled")|>
+        pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+        filter(course == "CS-140: Intro to Computer Program") |> 
+        mutate(order = case_when(
+          semester == "SP" ~ reporting_year,
+          semester == "FA" ~ reporting_year + 1)) |> 
+        unite("term", c(reporting_year, semester)) |>
+        mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+      course_app_semester <- course_app_semester |>
+        filter(semester_enrolled != 0)
+      
+course_app_semester <- course_app_semester |> mutate(semester_capacity = if_else(str_detect(term, "FA"), fall_capacity, spring_capacity))
+View(course_app_semester)
+```
+
+
+
 
 
 

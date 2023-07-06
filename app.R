@@ -232,6 +232,8 @@ server <- function(input, output, session) {
         mutate(term = fct_reorder(term, order, .desc = FALSE)) 
       course_app_semester <- course_app_semester |>
         filter(semester_enrolled != 0)
+      course_app_semester <- course_app_semester |> 
+        mutate(semester_capacity = if_else(str_detect(term, "FA"), fall_capacity, spring_capacity))
       course_app_section <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
       course_app_section <- course_app_section |> 
         filter(course %in% input$course_openseats)|>
