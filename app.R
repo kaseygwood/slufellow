@@ -17,6 +17,7 @@ ui <- fluidPage(
                sidebarPanel(
                    radioButtons("time", "Choose your preferred time frame.",
                                 choices = c("Year", "Semester")),
+                   sliderInput("capacity", "Minimum Course Capacity", min = 1, max = max(course_reg_data$yearly_capacity), value= 5),
                    selectizeInput("courses", label = "Select a Course", 
                                 choices = unique(course_reg_data$course),
                                 selected = "Applied Statistics"),
@@ -66,6 +67,15 @@ server <- function(input, output, session) {
       choices <- c("omit COVID-19 years")
     }
     updateCheckboxGroupInput(session, "sections", choices = choices, selected = NULL)
+  })
+  observeEvent(input$capacity, {
+    if (input$time == "Semester") {
+      filter_capacity <- course_reg_data |> filter(yearly_capacity >= input$capacity)
+    }
+    else if (input$time == "Year"){
+      filter_capacity <- course_reg_data |> filter(yearly_capacity >= input$capacity)
+    }
+    updateSelectizeInput(inputId = "courses", choices = unique(filter_capacity$course))
   })
   # plot enrollment by semester
   output$plot <- renderPlotly({
@@ -180,7 +190,7 @@ server <- function(input, output, session) {
         if ("omit COVID-19 years" %in% input$sections){
           course_app_yearly <- course_app_yearly |> filter(reporting_year != 2020)
         }
-        plot2 <-ggplot(data = course_app_yearly, aes(x = reporting_year, y = yearly_enrolled, group = 1, label = total_sections, label2 = avg_section)) +
+        plot2 <-ggplot(data = course_app_yearly, aes(x = as.character(reporting_year), y = yearly_enrolled, group = 1, label = total_sections, label2 = avg_section)) +
           geom_line() +
           geom_point() +
           labs(title = glue::glue("Enrollment for ", input$courses),
@@ -210,10 +220,12 @@ server <- function(input, output, session) {
       subject_data <- left_join(subject_data, section_total, by = c("reporting_year", "level"))
       subject_data <- subject_data |> mutate(avg_section = round((enrolled/total_sections)))
       subject_plot<- ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(level), label = total_sections, label2 = avg_section)) +
-        geom_point() +
         geom_line() +
+        geom_point() +
         scale_y_continuous(limits = c(0, max(subject_data$enrolled))) +
-        labs(color = "Course Level") +
+        labs(color = "Course Level",
+             x = "Year",
+             y = "Enrollment") +
         theme_minimal()
       ggplotly(subject_plot, tooltip = c("label", "y", "label2"))
     }
@@ -262,7 +274,7 @@ server <- function(input, output, session) {
       course_app_yearly <- left_join(course_app_yearly, course_reg_section,
                            by= c("reporting_year"))
       course_app_yearly <- course_app_yearly |> mutate(avg_section = round((yearly_enrolled/total_sections)))
-      plot1 <- ggplot(data = course_app_yearly, aes(x = reporting_year), label = total_sections, label2 = avg_section) +
+      plot1 <- ggplot(data = course_app_yearly, aes(x = as.character(reporting_year)), label = total_sections, label2 = avg_section) +
         geom_col(aes(y = yearly_enrolled, fill = "Enrollment")) +
         geom_col(aes(y = yearly_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
         scale_fill_grey() +
