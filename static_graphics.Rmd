@@ -230,7 +230,7 @@ course_app_semester <- course_reg_data |>
         rename("FA" = "fall_enrolled",
                "SP" = "spring_enrolled")|>
         pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
-        filter(course == "CS-140: Intro to Computer Program") |> 
+        filter(course == "CS-318: Graph Theory") |> 
         mutate(order = case_when(
           semester == "SP" ~ reporting_year,
           semester == "FA" ~ reporting_year + 1)) |> 
@@ -246,6 +246,38 @@ View(course_app_semester)
 
 
 
+```{r}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
+course_app_yearly <- course_reg_data |> filter(course == "CS-318: Graph Theory")
+course_reg_section <- course_reg_section  |>
+        filter(course == "CS-318: Graph Theory") |> 
+        group_by(year) |> summarise(total_sections = n()) |> rename("reporting_year"="year")
+course_app_yearly <- left_join(course_app_yearly, course_reg_section,
+                           by= c("reporting_year"))
+course_app_yearly <- course_app_yearly |> mutate(avg_section = round((yearly_enrolled/total_sections)))
+
+full_years <- data.frame(reporting_year = min(course_app_yearly$reporting_year):max(course_app_yearly$reporting_year))
+
+course_app_yearly <- course_app_yearly |> 
+  complete(reporting_year = full_years$reporting_year)
+
+plot1 <- ggplot(data = course_app_yearly, aes(x = as.character(reporting_year)), label = total_sections, label2 = avg_section) +
+        geom_col(aes(y = yearly_enrolled, fill = "Enrollment")) +
+        geom_col(aes(y = yearly_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
+        scale_fill_grey() +
+        labs(
+          x = "Year",
+          y = "Enrollment",
+          fill = "") + 
+        theme_minimal()+
+        theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust=1))
+ggplotly(plot1, tooltip = c("label", "y", "label2"))
+```
 
 
 

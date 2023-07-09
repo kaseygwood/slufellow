@@ -2,6 +2,8 @@ library(shiny)
 library(ggthemes)
 library(readr)
 library(plotly)
+
+
 library(tidyverse)
 course_reg_data <- read_csv("course_reg_data.csv")
 course_reg_section <- course_reg_data |> 
@@ -33,6 +35,9 @@ ui <- fluidPage(
                  selectInput("discipline", label = "Select a Subject",
                              choices = unique(course_reg_data$Subject),
                              selected = "CS"),
+                 checkboxGroupInput("discipline_settings", "Graph Settings:", 
+                                    choices = c("omit COVID-19 years"),
+                                    selected = "basic"),
                  textOutput(outputId = "data_description")
                ),
                mainPanel(plotlyOutput(outputId = "discipline_plot"))
@@ -219,6 +224,9 @@ server <- function(input, output, session) {
       section_total <- section_total |> filter(level <=3)
       subject_data <- left_join(subject_data, section_total, by = c("reporting_year", "level"))
       subject_data <- subject_data |> mutate(avg_section = round((enrolled/total_sections)))
+      if ("omit COVID-19 years" %in% input$discipline_settings){
+        subject_data <- subject_data |> filter(reporting_year != 2020)
+      }
       subject_plot<- ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(level), label = total_sections, label2 = avg_section)) +
         geom_line() +
         geom_point() +
@@ -274,10 +282,13 @@ server <- function(input, output, session) {
       course_app_yearly <- left_join(course_app_yearly, course_reg_section,
                            by= c("reporting_year"))
       course_app_yearly <- course_app_yearly |> mutate(avg_section = round((yearly_enrolled/total_sections)))
+      full_years <- data.frame(reporting_year = min(course_reg_data$reporting_year):max(course_reg_data$reporting_year))
+      course_app_yearly <- course_app_yearly |> 
+        complete(reporting_year = full_years$reporting_year)
       plot1 <- ggplot(data = course_app_yearly, aes(x = as.character(reporting_year)), label = total_sections, label2 = avg_section) +
-        geom_col(aes(y = yearly_enrolled, fill = "Enrollment")) +
+        geom_col(aes(y = yearly_enrolled, fill = ifelse(yearly_enrolled >= yearly_capacity, "Enrollment (Full)", "Enrollment (Partial)"))) +
         geom_col(aes(y = yearly_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
-        scale_fill_grey() +
+        scale_fill_manual(values = c("Enrollment (Full)" = "red", "Enrollment (Partial)"="grey")) +
         labs(
           x = "Year",
           y = "Enrollment",
