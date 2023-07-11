@@ -90,6 +90,16 @@ plot <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, 
           geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, label = enrolled, group = 1), alpha = 0.25) +
           theme(axis.text.x = element_text(angle = 90)) 
 ggplotly(plot)
+ course_app_semester <- course_reg_data |> 
+          rename("FA" = "fall_enrolled",
+                 "SP" = "spring_enrolled")|>
+          pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+          mutate(order = case_when(
+            semester == "SP" ~ reporting_year,
+            semester == "FA" ~ reporting_year + 1)) |> 
+          unite("term", c(reporting_year, semester)) |>
+          mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+term <- tibble(unique(course_app_semester$term))
 ```
 
 
@@ -278,6 +288,24 @@ plot1 <- ggplot(data = course_app_yearly, aes(x = as.character(reporting_year)),
         theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust=1))
 ggplotly(plot1, tooltip = c("label", "y", "label2"))
 ```
+
+getting average capacity
+```{r}
+View(course_reg_data)
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
+test<- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                 yearly_capacity = first(yearly_capacity),
+                                                                 avg_capacity = round(yearly_capacity/total_sections)) |>
+  rename("reporting_year" = "year")
+
+left_join(course_reg_data, test, by=c("course", "reporting_year"))
+
+```
+
 
 
 
