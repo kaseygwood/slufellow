@@ -1,0 +1,80 @@
+---
+title: "Visualizing St. Lawrence University Registration Data"
+author: "Kasey Wood"
+format: html
+editor: visual
+---
+
+## Introduction and Background
+
+St. Lawrence University is a private institution located in Canton, NY. With around 2,250 students enrolled on campus each year, there are many disciplines, course options, and routes to take for new students. Students may meet with their advisers to help guide them on the correct path of courses, or they may choose to guide themselves. Every student goes through the registration process themselves, however. And every professor is on the receiving end of that registration process. At St. Lawrence there are three days of registration for students. On the first day a student may choose their first class, then they may choose their second on the second day, and lastly on the third day the student may choose their last two classes and any lab they may want to take. Professors often put caps on their courses depending on the course and/or the classroom they will be in for that course. This leaves students with one of the most daunting questions, which course do I choose first?
+
+professors side
+
+## Tidying the Data
+
+The St. Lawrence Registration data ranges from 2014 to 2022 and contains 61 variables.
+
+Example of the beginning dataset:
+```{r, echo= FALSE, warning = FALSE, message=FALSE}
+library(readxl)
+library(tidyverse)
+course_reg_full <- read_excel("course_reg_14_23.xlsx")
+head(course_reg_full)
+```
+
+This data set did not include the course capacity, however we recieved this data from a separate data set as shown:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+course_capacity <- read_excel("Course Capacity.xlsx")
+head(course_capacity)
+```
+
+I then joined these two datasets using a left_join and using the course section id as the key.
+
+In order to wrangle to dataset to be more usable for visualizations, the full data set was trimmed down to key variables. These key variables include Acad Year Term, Reporting Year, Course ID, Course Name, Subject, Course Number, Course Title, Enrolled, xlist variables, Section Number, and Section Capacity.
+
+Once the dataset was more readable, the first issue to address was the xlisted courses. In the original data set cross listed courses only show enrollment for whichever version the student signed up for. For example... When looking at courses in the app, the user will want to see what the full enrollment for a course is, so having the cross-listed courses only list partial enrollment was an issue. The goal was to make cross-listed course enrollment refer to the combined total enrollment of all cross-listed courses. In order to accomplish this I first split the data set up, so I could deal with the cross-listed and non-xlisted courses separately. 
+
+The code used to fix this is below.
+```{r, echo=FALSE}
+course_capacity <- course_capacity |> rename("Course Section Name" = "Section Name") |> 
+  rename("Course Section ID" = "Section ID") |> select(-"Section Number") |> select(-"...5")
+
+course_reg_full <- left_join(course_reg_full, course_capacity, by = "Course Section ID")
+course_reg_data <- course_reg_full |> filter(Subject == "MATH" | 
+                                               Subject == "STAT" | 
+                                               Subject == "DATA" | 
+                                               Subject == "CS") |>
+  select(`Acad Year Term`, `Reporting Year`, `Course ID`, `Course Name`, 
+         `Subject`, `Course Number`, `Course Title`, `Enrolled`, 
+         `xlist Primary Course`, `xlist Section1`, `xlist Section2`, 
+         `xlist Section3`, `xlist Section4`, `Section Number`, `Section Capacity`) |> arrange(desc(`Reporting Year`))
+course_reg_data <- course_reg_data |> separate(col = `Acad Year Term`, into = c("reporting_year", "semester"), sep = -2) 
+course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Number`))
+```
+
+```{r,echo=TRUE, warning=FALSE, message=FALSE}
+course_reg_xlist <- course_reg_data |> drop_na(`xlist Section1`)
+course_reg_xlist <- course_reg_xlist |> group_by(`Course Title`, section, `Reporting Year`) |> mutate(enrolled = sum(Enrolled)) |> select(-Enrolled) |> rename("Enrolled" = "enrolled") |>
+  unite("course", c(`Course Name`, `Course Title`), sep = ": ")
+course_reg_noxlist <- course_reg_data |> filter(is.na(`xlist Section1`)) |> unite("course", c(`Course Name`, `Course Title`), sep = ": ")
+course_reg_data <- full_join(course_reg_xlist, course_reg_noxlist)
+course_reg_data <- course_reg_data |> group_by(course, `Reporting Year`) |>
+  mutate(yearly_capacity = sum(`Section Capacity`, na.rm = TRUE))
+```
+
+As shown in the code, the data was grouped by course (so every course that was cross-listed is grouped with it's cross-listed course) and for each year, then added together to get the total enrollment. The mutate function allows that total enrollment to show up for each data point. The non-xlist data set was unchanged except for the course variable that would be used to help unite the data set. 
+
+After the dataset had accurate enrollment numbers for how it would be used within the app, the next step was to wrangle the data so there was only one data point for each course every year. This data set needed to include both fall_enrollment and spring_enrollment for that year along with the yearly_enrollment. It also needed to include the enrollment for each section every semester, so a sectioned graph could be made. After this was done by grouping the data in different ways and summing the enrollment for different time periods and sections, the dataset was usable within the app.
+
+The dataset used within the app is shown below:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+course_reg_data <- read_csv("course_reg_data.csv")
+head(course_reg_data)
+```
+
+## App Graphics (Static Versions)
+
+
+
+

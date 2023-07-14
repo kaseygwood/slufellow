@@ -1,0 +1,137 @@
+---
+title: Visualizing and Analyzing St. Lawrence University Registration Data
+author:
+  - name: Kassandra Wood
+    affil: 1
+affiliation:
+  - num: 1
+    address: Department of MATH/STAT/DATA/CS, St. Lawrence University
+column_numbers: 3
+logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+output: 
+  posterdown::posterdown_html:
+    self_contained: false
+bibliography: packages.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# About The Data
+
+St. Lawrence University registration data currently spans from 2014 to 2022.
+
+### Key Variables Used
+
+-   Course Title
+
+-   Course Number
+
+-   Reporting Year
+
+-   Section Number
+
+-   Section Capacity
+
+-   Enrolled
+
+-   Academic Year Term
+
+## Goals
+
+1.  Visualize enrollment from 2014-2022 by reporting year and semester.
+    1.  Visualize enrollment by course.
+    2.  Visualize enrollment by discipline (subject).
+2.  Visualize open seats in courses by reporting year and semester.
+3.  Strengthen overall R-language skills through encompassing this within a shiny app.
+    1.  Create an interactive and easy to use app for public use.
+
+# Tidying The Data
+
+### Issues Addressed in the Data
+
+-   Cross-listed course enrollment refers to the combined total enrollment of all cross-listed courses.
+
+-   COVID-19 section numbers are off, therefore there are options to omit seeing these years on the graphics.
+
+# App Figures
+
+```{r standard-plot, fig.align='center', fig.cap='Great figure!', fig.height=5, message=FALSE, warning=FALSE, out.width='80%'}
+library(tidyverse)
+library(readr)
+library(ggthemes)
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
+course_app_semester <- course_reg_data |> 
+        rename("FA" = "fall_enrolled",
+               "SP" = "spring_enrolled")|>
+        pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+        mutate(order = case_when(
+          semester == "SP" ~ reporting_year,
+          semester == "FA" ~ reporting_year + 1)) |> 
+        unite("term", c(reporting_year, semester)) |>
+        mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+full_terms <- tibble(term = unique(course_app_semester$term))
+course_app_semester <- course_app_semester |>
+        filter(course == "STAT-113: Applied Statistics") |>
+        filter(semester_enrolled != 0)
+course_app_semester <- course_app_semester |> 
+        mutate(semester_capacity = if_else(str_detect(term, "FA"), fall_capacity, spring_capacity))
+course_app_section <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
+course_app_section <- course_app_section |> 
+        filter(course == "STAT-113: Applied Statistics")|>
+        filter(enrolled != 0)
+course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
+course_app_semester <- left_join(course_app_semester, course_app_section3,
+                                       by = c("term"))
+course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
+ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
+          geom_line() +
+          geom_point(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
+          geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, group = 1), alpha = 0.25, shape = 45)+
+          geom_text(data = course_app_section, aes(x = term, y = cumulative_enrolled - 5, label = section), angle = 90,
+                    alpha = 0.5, size = 2,
+                    hjust = 0, vjust = 0.5, nudge_x= -0.2) +
+          scale_x_discrete(limits = levels(course_app_semester$term)) +
+          scale_y_continuous(limits = c(0, max(course_app_semester$semester_enrolled))) +
+          labs(title = glue::glue("Enrollment for STAT-113: Applied Statistics"),
+               x = "Semester",
+                 y = "Enrollment",
+                 colour = "Semester") + 
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                axis.text.y = element_text(hjust = 1))
+
+```
+
+```{r morefigs, out.width='80%', echo=TRUE, fig.cap='Amazing, right?!', fig.height=5}
+data <- iris
+
+plot(x = data$Sepal.Length, 
+     y = data$Sepal.Width, 
+     col = data$Species,
+     pch = 19, 
+     xlab = "Sepal Length (cm)",
+     ylab = "Sepal Width (cm)")
+
+```
+
+# Constructing The App
+
+Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus [@R-posterdown].
+
+# Next Steps and Conclusion
+
+Try `posterdown` out! Hopefully you like it!
+
+```{r, include=FALSE}
+knitr::write_bib(c('knitr','rmarkdown','posterdown','pagedown'), 'packages.bib')
+```
+
+# References
