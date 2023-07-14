@@ -6,9 +6,11 @@ library(tidyverse)
 course_reg_data <- read_csv("course_reg_data.csv")
 course_reg_section <- course_reg_data |> 
   pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
-  filter(enrolled != 0) 
+  filter(enrolled != 0) |>
+  mutate(semester_year = ifelse(str_detect(semester, "SP"), reporting_year+1, reporting_year))
 course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
-course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
+course_reg_section <- course_reg_section |> unite("term", c(semester_year, semester))
+
 ui <- fluidPage(
   theme = bslib::bs_theme(bootswatch = "sandstone"),
   tabsetPanel(
@@ -180,11 +182,8 @@ server <- function(input, output, session) {
                  "SP" = "spring_enrolled")|>
           pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
           filter(course %in% input$courses) |> 
-          mutate(order = case_when(
-            semester == "SP" ~ reporting_year,
-            semester == "FA" ~ reporting_year + 1)) |> 
-          unite("term", c(reporting_year, semester)) |>
-          mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+          mutate(year = ifelse(semester == "SP", reporting_year+1, reporting_year)) |>
+          unite("term", c(year, semester)) 
         course_app_semester <- course_app_semester |>
           filter(semester_enrolled != 0)
         course_app_section <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
@@ -194,8 +193,16 @@ server <- function(input, output, session) {
         course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
         course_app_semester <- left_join(course_app_semester, course_app_section3,
                                          by = c("term"))
-        course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))|>
-          mutate(term = fct_reorder(term, order, .desc = FALSE))
+        course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
+        course_app_semester <- course_app_semester |> mutate(year = parse_number(term),
+                                                             semester = case_when(
+                                                               str_detect(term, "FA") ~ "FA",
+                                                               str_detect(term, "SP") ~ "SP"
+                                                             ))
+        course_app_semester <- course_app_semester |> mutate(order = case_when(
+          semester == "FA" ~ year + 1,
+          semester == "SP" ~ year
+        )) |> mutate(term = fct_reorder(term, order, .desc = FALSE))
         if ("omit COVID-19 years" %in% input$sections){
           course_app_semester <- course_app_semester |> filter(term != "2020_FA") |> filter(term != "2021_SP")
           course_app_section <- course_app_section |> filter(term != "2020_FA") |> filter(term != "2021_SP")
@@ -335,11 +342,8 @@ server <- function(input, output, session) {
         rename("FA" = "fall_enrolled",
                "SP" = "spring_enrolled")|>
         pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
-        mutate(order = case_when(
-          semester == "SP" ~ reporting_year,
-          semester == "FA" ~ reporting_year + 1)) |> 
-        unite("term", c(reporting_year, semester)) |>
-        mutate(term = fct_reorder(term, order, .desc = FALSE)) 
+        mutate(year = ifelse(semester == "SP", reporting_year+1, reporting_year)) |>
+        unite("term", c(year, semester)) 
       full_terms <- tibble(term = unique(course_app_semester$term))
       course_app_semester <- course_app_semester |>
         filter(course %in% input$course_openseats) |>
@@ -354,11 +358,21 @@ server <- function(input, output, session) {
       course_app_semester <- left_join(course_app_semester, course_app_section3,
                                        by = c("term"))
       course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
+      full_terms <- full_terms |> mutate(year = parse_number(term),
+                                                           semester = case_when(
+                                                             str_detect(term, "FA") ~ "FA",
+                                                             str_detect(term, "SP") ~ "SP"
+                                                           ))
+      full_terms <- full_terms |> mutate(order = case_when(
+        semester == "FA" ~ year + 1,
+        semester == "SP" ~ year)) |> 
+        mutate(term = fct_reorder(term, order, .desc = FALSE))
       if ("omit COVID-19 years" %in% input$openseats_settings){
         course_app_semester <- course_app_semester |> filter(term != "2020_FA") |> filter(term != "2021_SP")
       }
       course_app_semester <- course_app_semester |> 
-        complete(term = full_terms$term)
+        complete(term = full_terms$term) |>
+        mutate(term = fct_reorder(term, full_terms$order, .desc = FALSE))
       plot1 <- ggplot(data = course_app_semester, aes(x = term, label = total_sections, label2 = avg_section)) +
         geom_col(aes(y = semester_enrolled, fill = ifelse(semester_enrolled >= semester_capacity, "Full Enrollment", "Enrollment"))) +
         geom_col(aes(y = semester_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
