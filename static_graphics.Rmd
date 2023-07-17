@@ -99,7 +99,7 @@ ggplotly(plot)
             semester == "FA" ~ reporting_year + 1)) |> 
           unite("term", c(reporting_year, semester)) |>
           mutate(term = fct_reorder(term, order, .desc = FALSE)) 
-term <- tibble(unique(course_app_semester$term))
+term <- tibble(term = unique(course_app_semester$term))
 ```
 
 
@@ -298,12 +298,87 @@ course_reg_section <- course_reg_data |>
 course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
 course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
 test<- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
-                                                                 yearly_capacity = first(yearly_capacity),
                                                                  avg_capacity = round(yearly_capacity/total_sections)) |>
   rename("reporting_year" = "year")
 
-left_join(course_reg_data, test, by=c("course", "reporting_year"))
+test <- left_join(course_reg_data, test, by=c("course", "reporting_year"))
+test <- test |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()))
 
+```
+
+```{r}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) 
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(reporting_year, semester))
+        course_app_semester <- course_reg_data |> 
+          rename("FA" = "fall_enrolled",
+                 "SP" = "spring_enrolled")|>
+          pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+          filter(course =="CS-140: Intro to Computer Program") |> 
+          mutate(year = ifelse(semester == "SP", reporting_year+1, reporting_year)) |>
+          unite("term", c(year, semester)) 
+        course_app_semester <- course_app_semester |>
+          filter(semester_enrolled != 0)
+        course_app_section <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
+        course_app_section <- course_app_section |> 
+          filter(course =="CS-140: Intro to Computer Program")|>
+          filter(enrolled != 0)
+        course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
+        course_app_semester <- left_join(course_app_semester, course_app_section3,
+                                         by = c("term"))
+        course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
+course_app_semester <- course_app_semester |> mutate(year = parse_number(term),
+                                                     semester = case_when(
+                                                       str_detect(term, "FA") ~ "FA",
+                                                       str_detect(term, "SP") ~ "SP"
+                                                     ))
+course_app_semester <- course_app_semester |> mutate(order = case_when(
+  semester == "FA" ~ year + 1,
+  semester == "SP" ~ year
+)) |> mutate(term = fct_reorder(term, order, .desc = FALSE))
+plot_nosection <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1, label =
+                                                           total_sections, label2 = avg_section)) +
+          geom_line() +
+          geom_point() +
+          scale_x_discrete(limits=levels(course_app_semester$term)) +
+          scale_y_continuous(limits= c(0, max(course_app_semester$semester_enrolled))) +
+          labs(
+               x = "Semester",
+               y = "Enrollment",
+               colour = "Semester") + 
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                axis.text.y = element_text(hjust = 1))
+ggplotly(plot_nosection)
+View(course_app_semester)
+```
+
+
+```{r}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) |>
+  mutate(semester_year = ifelse(str_detect(semester, "SP"), reporting_year+1, reporting_year))
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(semester_year, semester))
+filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
+filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                                yearly_capacity = first(yearly_capacity),
+                                                                                avg_capacity = round(yearly_capacity/total_sections)) |>#,
+                                                                     #total_offered = first(total_offered)/total_sections) |>
+  rename("reporting_year" = "year")
+filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
+filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
+filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
+                                                                      Subject = first(Subject),
+                                                                  total_years_offered =first(total_years_offered))#,
+                                                                  #total_offered = first(total_offered))
+filter_subject <- filter_subject |> filter(full_avg_capacity >= 5) |> filter(Subject == "CS") #|> filter(total_offered >= 5)
+View(filter_subject)
 ```
 
 

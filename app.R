@@ -38,6 +38,7 @@ ui <- fluidPage(
                                choices = unique(course_reg_data$Subject),
                                selected = "CS"),
                    sliderInput("capacity", "Minimum Course Capacity", min = 1, max = 60, value= 5),
+                   sliderInput("years_offered", "Minimum Years Offered", min = 1, max = 20, value = 5),
                    selectizeInput("courses", label = "Select a Course", 
                                 choices = unique(course_reg_data$course),
                                 selected = "Applied Statistics"),
@@ -69,6 +70,7 @@ ui <- fluidPage(
                              choices = unique(course_reg_data$Subject),
                              selected = "CS"),
                  sliderInput("capacity_openseats", "Minimum Course Capacity", min = 1, max = 60, value= 5),
+                 sliderInput("years_offered_seats", "Minimum Years Offered", min = 1, max = 9, value = 5),
                  selectizeInput("course_openseats", label = "Select a Course",
                              choices = unique(course_reg_data$course),
                              selected = "Applied Statistics"),
@@ -84,29 +86,65 @@ ui <- fluidPage(
 
 
 server <- function(input, output, session) {
-  observeEvent(input$select_subject, {
-    filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
-                                                                                 yearly_capacity = first(yearly_capacity),
-                                                                                 avg_capacity = round(yearly_capacity/total_sections)) |>
-      rename("reporting_year" = "year")
-    
-    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
-    filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
-                                                                      Subject = first(Subject))
-    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity) |> filter(Subject == input$select_subject)
-    updateSelectizeInput(session, "courses", choices = unique(filter_subject$course)) 
-  }) # end subject event
-  observeEvent(input$select_subject_seats, {
+  observeEvent(input$years_offered, {
+    filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
     filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
                                                                                 yearly_capacity = first(yearly_capacity),
                                                                                 avg_capacity = round(yearly_capacity/total_sections)) |>
       rename("reporting_year" = "year")
-    
+    filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
     filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
     filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
-                                          Subject = first(Subject))
-    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity_openseats) |> filter(Subject == input$select_subject_seats)
-    updateSelectizeInput(session, "course_openseats", choices = unique(filter_subject$course)) 
+                                                                      Subject = first(Subject),
+                                                                      total_years_offered =first(total_years_offered))
+    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity) |> filter(Subject == input$select_subject) |> filter(total_years_offered >= input$years_offered)
+    
+    updateSelectizeInput(session, "courses", choices = unique(filter_subject$course))
+  })
+  observeEvent(input$years_offered_seats, {
+    filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
+    filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                                yearly_capacity = first(yearly_capacity),
+                                                                                avg_capacity = round(yearly_capacity/total_sections)) |>
+      rename("reporting_year" = "year")
+    filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
+    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
+    filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
+                                                                      Subject = first(Subject),
+                                                                      total_years_offered =first(total_years_offered))
+    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity_openseats) |> filter(Subject == input$select_subject_seats) |> filter(total_years_offered >= input$years_offered_seats)
+    
+    updateSelectizeInput(session, "course_openseats", choices = unique(filter_subject$course))
+  })
+  observeEvent(input$select_subject, {
+    filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
+    filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                                yearly_capacity = first(yearly_capacity),
+                                                                                avg_capacity = round(yearly_capacity/total_sections)) |>
+      rename("reporting_year" = "year")
+    filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
+    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
+    filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
+                                                                      Subject = first(Subject),
+                                                                      total_years_offered =first(total_years_offered))
+    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity) |> filter(Subject == input$select_subject) |> filter(total_years_offered >= input$years_offered)
+    
+    updateSelectizeInput(session, "courses", choices = unique(filter_subject$course))
+  }) # end subject event
+  observeEvent(input$select_subject_seats, {
+    filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
+    filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                                yearly_capacity = first(yearly_capacity),
+                                                                                avg_capacity = round(yearly_capacity/total_sections)) |>
+      rename("reporting_year" = "year")
+    filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
+    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
+    filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
+                                                                      Subject = first(Subject),
+                                                                      total_years_offered =first(total_years_offered))
+    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity_openseats) |> filter(Subject == input$select_subject_seats) |> filter(total_years_offered >= input$years_offered_seats)
+    
+    updateSelectizeInput(session, "course_openseats", choices = unique(filter_subject$course))
   }) # end subject event
   
   description_text <- "*The data being used in this plot does not include SYE courses (these courses are often independent and have low enrollment), 
@@ -125,54 +163,34 @@ server <- function(input, output, session) {
     updateCheckboxGroupInput(session, "sections", choices = choices, selected = NULL)
   }) # end checkboxinputupdate
   observeEvent(input$capacity, {
-    if (input$time == "Semester") {
-      filter_capacity <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
-                                                                                   yearly_capacity = first(yearly_capacity),
-                                                                                   avg_capacity = round(yearly_capacity/total_sections)) |>
-        rename("reporting_year" = "year")
-      
-      filter_capacity <- left_join(course_reg_data, filter_capacity, by=c("course", "reporting_year"))
-      filter_capacity <- filter_capacity |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
-                                                                        Subject = first(Subject))
-      filter_capacity <- filter_capacity |> filter(full_avg_capacity >= input$capacity) |> filter(Subject == input$select_subject)
-    }
-    else if (input$time == "Year"){
-      filter_capacity <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
-                                                                       yearly_capacity = first(yearly_capacity),
-                                                                       avg_capacity = round(yearly_capacity/total_sections)) |>
-        rename("reporting_year" = "year")
-      
-      filter_capacity <- left_join(course_reg_data, filter_capacity, by=c("course", "reporting_year"))
-      filter_capacity <- filter_capacity |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
-                                                                          Subject = first(Subject))
-      filter_capacity <- filter_capacity |> filter(full_avg_capacity >= input$capacity) |> filter(Subject == input$select_subject)
-    }
-    updateSelectizeInput(inputId = "courses", choices = unique(filter_capacity$course))
+    filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
+    filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                                yearly_capacity = first(yearly_capacity),
+                                                                                avg_capacity = round(yearly_capacity/total_sections)) |>
+      rename("reporting_year" = "year")
+    filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
+    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
+    filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
+                                                                      Subject = first(Subject),
+                                                                      total_years_offered =first(total_years_offered))
+    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity) |> filter(Subject == input$select_subject) |> filter(total_years_offered >= input$years_offered)
+    
+    updateSelectizeInput(session, "courses", choices = unique(filter_subject$course))
   }) # end capacity edit for enrollment graph
   observeEvent(input$capacity_openseats, {
-    if (input$time_openseats == "Semester") {
-      filter_capacity <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
-                                                                                   yearly_capacity = first(yearly_capacity),
-                                                                                   avg_capacity = round(yearly_capacity/total_sections)) |>
-        rename("reporting_year" = "year")
-      
-      filter_capacity <- left_join(course_reg_data, filter_capacity, by=c("course", "reporting_year"))
-      filter_capacity <- filter_capacity |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
-                                                                          Subject = first(Subject))
-      filter_capacity <- filter_capacity |> filter(full_avg_capacity >= input$capacity_openseats) |> filter(Subject == input$select_subject_seats)
-    }
-    else if (input$time_openseats == "Year"){
-      filter_capacity <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
-                                                                                   yearly_capacity = first(yearly_capacity),
-                                                                                   avg_capacity = round(yearly_capacity/total_sections)) |>
-        rename("reporting_year" = "year")
-      
-      filter_capacity <- left_join(course_reg_data, filter_capacity, by=c("course", "reporting_year"))
-      filter_capacity <- filter_capacity |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
-                                                                          Subject = first(Subject))
-      filter_capacity <- filter_capacity |> filter(full_avg_capacity >= input$capacity_openseats) |> filter(Subject == input$select_subject_seats)
-    }
-      updateSelectizeInput(inputId = "course_openseats", choices = unique(filter_capacity$course))
+    filter_subject <- course_reg_section |> group_by(course) |> mutate(total_offered = n())
+    filter_subject <- course_reg_section |> group_by(year, course) |> summarise(total_sections = n(),
+                                                                                yearly_capacity = first(yearly_capacity),
+                                                                                avg_capacity = round(yearly_capacity/total_sections)) |>
+      rename("reporting_year" = "year")
+    filter_subject <- filter_subject |> group_by(course) |> mutate(total_years_offered = n())
+    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
+    filter_subject <- filter_subject |> group_by(course) |> summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
+                                                                      Subject = first(Subject),
+                                                                      total_years_offered =first(total_years_offered))
+    filter_subject <- filter_subject |> filter(full_avg_capacity >= input$capacity_openseats) |> filter(Subject == input$select_subject_seats) |> filter(total_years_offered >= input$years_offered_seats)
+    
+    updateSelectizeInput(session, "course_openseats", choices = unique(filter_subject$course))
   }) # end capacity edit for open seats graph
   # plot enrollment by semester
   output$plot <- renderPlotly({
