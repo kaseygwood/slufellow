@@ -133,10 +133,48 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="introduction-and-background" class="level2">
 <h2 class="anchored" data-anchor-id="introduction-and-background">Introduction and Background</h2>
 <p>St.&nbsp;Lawrence University is a private institution located in Canton, NY. With around 2,250 students enrolled on campus each year, there are many disciplines, course options, and routes to take for new students. Students may meet with their advisers to help guide them on the correct path of courses, or they may choose to guide themselves. Every student goes through the registration process themselves, however. And every professor is on the receiving end of that registration process. At St.&nbsp;Lawrence there are three days of registration for students. On the first day a student may choose their first class, then they may choose their second on the second day, and lastly on the third day the student may choose their last two classes and any lab they may want to take. Professors often put caps on their courses depending on the course and/or the classroom they will be in for that course. This leaves students with one of the most daunting questions, which course do I choose first?</p>
-<p>professors side</p>
 </section>
-<section id="tidying-the-data" class="level2">
-<h2 class="anchored" data-anchor-id="tidying-the-data">Tidying the Data</h2>
+<section id="app-graphics-static-versions" class="level2">
+<h2 class="anchored" data-anchor-id="app-graphics-static-versions">App Graphics (Static Versions)</h2>
+<section id="notes-about-the-data" class="level3">
+<h3 class="anchored" data-anchor-id="notes-about-the-data">Notes about the Data</h3>
+<ul>
+<li>Cross-listed course enrollment refers to the combined total enrollment of all cross-listed courses.</li>
+<li>COVID-19 section numbers are off, therefore there are options to omit seeing these years on the graphics within the app. These years will be included in the graphs shown below.</li>
+</ul>
+</section>
+<section id="enrollment-by-course" class="level3">
+<h3 class="anchored" data-anchor-id="enrollment-by-course">Enrollment by Course</h3>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="fellow_writeup_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This is a static version of a graphic displayed in the shiny app. In the app, the user can choose to look at this graphic by semester or by year for the x- variable. In addition the user is able to use the graph settings button to omit covid years for both the year and semester graphs. If the user chooses the semester time frame, then settings to view sections on the graph are displayed. The graphic above shows a semester time frame, with the sections marked and labeled, for STAT-113: Applied Statistics.</p>
+</section>
+<section id="enrollment-by-discipline" class="level3">
+<h3 class="anchored" data-anchor-id="enrollment-by-discipline">Enrollment by Discipline</h3>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="fellow_writeup_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The enrollment by discipline graphic displays enrollment by year from 2014-2022. The graphic above displays the total enrollment for math courses by course level. The data being used in this plot does not include SYE courses (these courses are often independent and have low enrollment), therefore the level four courses are not pictured.</p>
+</section>
+<section id="course-capacity" class="level3">
+<h3 class="anchored" data-anchor-id="course-capacity">Course Capacity</h3>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="fellow_writeup_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This graph depicts the course enrollment on top of the course capacity to better visualize open seats in courses. Red bars represent either full or overfilled courses.</p>
+</section>
+</section>
+<section id="appendix" class="level2">
+<h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
+<section id="tidying-the-data" class="level3">
+<h3 class="anchored" data-anchor-id="tidying-the-data">Tidying the Data</h3>
 <p>The St.&nbsp;Lawrence Registration data ranges from 2014 to 2022 and contains 61 variables.</p>
 <p>Example of the beginning dataset:</p>
 <div class="cell">
@@ -213,8 +251,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 </section>
-<section id="app-graphics-static-versions" class="level2">
-<h2 class="anchored" data-anchor-id="app-graphics-static-versions">App Graphics (Static Versions)</h2>
 </section>
 
 </main>

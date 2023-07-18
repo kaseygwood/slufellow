@@ -9,13 +9,172 @@ editor: visual
 
 St. Lawrence University is a private institution located in Canton, NY. With around 2,250 students enrolled on campus each year, there are many disciplines, course options, and routes to take for new students. Students may meet with their advisers to help guide them on the correct path of courses, or they may choose to guide themselves. Every student goes through the registration process themselves, however. And every professor is on the receiving end of that registration process. At St. Lawrence there are three days of registration for students. On the first day a student may choose their first class, then they may choose their second on the second day, and lastly on the third day the student may choose their last two classes and any lab they may want to take. Professors often put caps on their courses depending on the course and/or the classroom they will be in for that course. This leaves students with one of the most daunting questions, which course do I choose first?
 
-professors side
+## App Graphics (Static Versions)
 
-## Tidying the Data
+### Notes about the Data
+
+-   Cross-listed course enrollment refers to the combined total enrollment of all cross-listed courses.
+-   COVID-19 section numbers are off, therefore there are options to omit seeing these years on the graphics within the app. These years will be included in the graphs shown below.
+
+### Enrollment by Course
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggthemes)
+library(readr)
+library(tidyverse)
+course_reg_data <- read_csv("course_reg_data.csv")
+course_reg_section <- course_reg_data |> 
+  pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
+  filter(enrolled != 0) |>
+  mutate(semester_year = ifelse(str_detect(semester, "SP"), reporting_year+1, reporting_year))
+course_reg_section <- course_reg_section |> separate(col = semester, into = c("semester", "section"), sep = "_") |> mutate(year = reporting_year)
+course_reg_section <- course_reg_section |> unite("term", c(semester_year, semester))
+
+course_app_semester <- course_reg_data |> 
+          rename("FA" = "fall_enrolled",
+                 "SP" = "spring_enrolled")|>
+          pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |>
+  filter(course == "STAT-113: Applied Statistics") |> 
+          mutate(year = ifelse(semester == "SP", reporting_year+1, reporting_year)) |>
+          unite("term", c(year, semester)) 
+course_app_semester <- course_app_semester |>
+          filter(semester_enrolled != 0)
+course_app_section <- course_reg_section |> group_by(course, term) |>
+  mutate(cumulative_enrolled = cumsum(enrolled))
+        course_app_section <- course_app_section |> 
+          filter(course == "STAT-113: Applied Statistics")|>
+          filter(enrolled != 0)
+course_app_section3 <- course_app_section |> group_by(term) |> summarise(total_sections = n())
+course_app_semester <- left_join(course_app_semester, course_app_section3,
+                                         by = c("term"))
+course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
+course_app_semester <- course_app_semester |> mutate(year = parse_number(term),
+                                                             semester = case_when(
+                                                               str_detect(term, "FA") ~ "FA",
+                                                               str_detect(term, "SP") ~ "SP"
+                                                             ))
+course_app_semester <- course_app_semester |> mutate(order = case_when(
+          semester == "FA" ~ year + 1,
+          semester == "SP" ~ year
+        )) |> mutate(term = fct_reorder(term, order, .desc = FALSE))
+ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
+          geom_line() +
+          geom_point(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
+          geom_point(data = course_app_section, aes(x = term, y = cumulative_enrolled, group = 1), alpha = 0.25, shape = 45)+
+          geom_text(data = course_app_section, aes(x = term, y = cumulative_enrolled - 5, label = section), angle = 90,
+                    alpha = 0.5, size = 2,
+                    hjust = 0, vjust = 0.5, nudge_x= -0.2) +
+          scale_x_discrete(limits = levels(course_app_semester$term)) +
+          scale_y_continuous(limits = c(0, max(course_app_semester$semester_enrolled))) +
+          labs(title = glue::glue("Enrollment for STAT-113: Applied Statistics"),
+               x = "Semester",
+                 y = "Enrollment",
+                 colour = "Semester") + 
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                axis.text.y = element_text(hjust = 1))
+```
+
+This is a static version of a graphic displayed in the shiny app. In the app, the user can choose to look at this graphic by semester or by year for the x- variable. In addition the user is able to use the graph settings button to omit covid years for both the year and semester graphs. If the user chooses the semester time frame, then settings to view sections on the graph are displayed. The graphic above shows a semester time frame, with the sections marked and labeled, for STAT-113: Applied Statistics.
+
+### Enrollment by Discipline
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+subject_data <- course_reg_data |> mutate(level = case_when(
+        as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 1000 - 1,
+        as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100))
+subject_data <- subject_data |> filter(Subject == "MATH")
+subject_data <- subject_data |> group_by(level, reporting_year) |>
+  summarise(enrolled = sum(yearly_enrolled))
+subject_data <- subject_data |> filter(level <= 3)
+section_total <- course_reg_section |> mutate(level = case_when(
+  as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 
+    1000 - 1,
+  as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100))
+section_total <- section_total |> filter(Subject == "MATH")
+section_total <- section_total |> group_by(year, level) |>
+  summarise(total_sections = n()) |> rename("reporting_year" = "year")
+section_total <- section_total |> filter(level <=3)
+subject_data <- left_join(subject_data, section_total, by =
+                            c("reporting_year", "level"))
+subject_data <- subject_data |> mutate(avg_section =
+                                         round((enrolled/total_sections)))
+ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(level), 
+                                label = total_sections, label2 = avg_section)) +
+        geom_line() +
+        geom_point() +
+        scale_y_continuous(limits = c(0, max(subject_data$enrolled))) +
+        labs(title = glue::glue("Enrollment for Math"),
+              color = "Course Level",
+             x = "Year",
+             y = "Enrollment") +
+        theme_minimal()
+```
+
+The enrollment by discipline graphic displays enrollment by year from 2014-2022. The graphic above displays the total enrollment for math courses by course level. The data being used in this plot does not include SYE courses (these courses are often independent and have low enrollment), therefore the level four courses are not pictured.
+
+### Course Capacity
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+course_reg_data <- read_csv("course_reg_data.csv")
+course_app_semester2 <- course_reg_data |> 
+        rename("FA" = "fall_enrolled",
+               "SP" = "spring_enrolled")|>
+        pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
+        mutate(year = ifelse(semester == "SP", reporting_year+1, reporting_year)) |>
+        unite("term", c(year, semester)) 
+full_terms <- tibble(term = unique(course_app_semester2$term))
+course_app_semester2 <- course_app_semester2 |>
+        filter(course == "CS-140: Intro to Computer Program") |>
+        filter(semester_enrolled != 0)
+course_app_semester2 <- course_app_semester2 |> 
+        mutate(semester_capacity = if_else(str_detect(term, "FA"), fall_capacity, spring_capacity))
+course_app_section2 <- course_reg_section |> group_by(course, term) |> mutate(cumulative_enrolled = cumsum(enrolled))
+course_app_section2 <- course_app_section2 |> 
+        filter(course == "CS-140: Intro to Computer Program")|>
+        filter(enrolled != 0)
+course_app_section3 <- course_app_section2 |> group_by(term) |> summarise(total_sections = n())
+course_app_semester2 <- left_join(course_app_semester2, course_app_section3,
+                                       by = c("term"))
+course_app_semester2 <- course_app_semester2 |> mutate(avg_section = round(semester_enrolled / total_sections))
+full_terms <- full_terms |> mutate(year = parse_number(term),
+                                                           semester = case_when(
+                                                             str_detect(term, "FA") ~ "FA",
+                                                             str_detect(term, "SP") ~ "SP"
+                                                           ))
+full_terms <- full_terms |> mutate(order = case_when(
+        semester == "FA" ~ year + 1,
+        semester == "SP" ~ year)) |> 
+        mutate(term = fct_reorder(term, order, .desc = FALSE))
+course_app_semester2 <- course_app_semester2 |> 
+        complete(term = full_terms$term) |>
+        mutate(term = fct_reorder(term, full_terms$order, .desc = FALSE))
+ggplot(data = course_app_semester2, aes(x = term, label = total_sections, 
+                                       label2 = avg_section)) +
+        geom_col(aes(y = semester_enrolled, fill = ifelse(semester_enrolled >=
+                semester_capacity, "Full Enrollment", "Enrollment"))) +
+        geom_col(aes(y = semester_capacity, fill = "Enrollment Capacity"), alpha =
+                   0.5) +
+        scale_fill_manual(values = c("Full Enrollment" = "red", "Enrollment"="darkgrey", "Enrollment Capacity" = "grey"))+
+        labs(
+          title = glue::glue("Course Capacity for CS-140: Intro to Computer Program"),
+          x = "Year",
+          y = "Enrollment",
+          fill = "") + 
+        theme_minimal()+
+        theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust=1))
+```
+
+This graph depicts the course enrollment on top of the course capacity to better visualize open seats in courses. Red bars represent either full or overfilled courses. There are options to see this graph by year as well, as shown on the graph below. This section of the app helps depict courses that often fill up versus courses that often have open seats available.
+
+## Appendix
+
+### Tidying the Data
 
 The St. Lawrence Registration data ranges from 2014 to 2022 and contains 61 variables.
 
 Example of the beginning dataset:
+
 ```{r, echo= FALSE, warning = FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
@@ -24,6 +183,7 @@ head(course_reg_full)
 ```
 
 This data set did not include the course capacity, however we recieved this data from a separate data set as shown:
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 course_capacity <- read_excel("Course Capacity.xlsx")
 head(course_capacity)
@@ -33,9 +193,10 @@ I then joined these two datasets using a left_join and using the course section 
 
 In order to wrangle to dataset to be more usable for visualizations, the full data set was trimmed down to key variables. These key variables include Acad Year Term, Reporting Year, Course ID, Course Name, Subject, Course Number, Course Title, Enrolled, xlist variables, Section Number, and Section Capacity.
 
-Once the dataset was more readable, the first issue to address was the xlisted courses. In the original data set cross listed courses only show enrollment for whichever version the student signed up for. For example... When looking at courses in the app, the user will want to see what the full enrollment for a course is, so having the cross-listed courses only list partial enrollment was an issue. The goal was to make cross-listed course enrollment refer to the combined total enrollment of all cross-listed courses. In order to accomplish this I first split the data set up, so I could deal with the cross-listed and non-xlisted courses separately. 
+Once the dataset was more readable, the first issue to address was the xlisted courses. In the original data set cross listed courses only show enrollment for whichever version the student signed up for. For example... When looking at courses in the app, the user will want to see what the full enrollment for a course is, so having the cross-listed courses only list partial enrollment was an issue. The goal was to make cross-listed course enrollment refer to the combined total enrollment of all cross-listed courses. In order to accomplish this I first split the data set up, so I could deal with the cross-listed and non-xlisted courses separately.
 
 The code used to fix this is below.
+
 ```{r, echo=FALSE}
 course_capacity <- course_capacity |> rename("Course Section Name" = "Section Name") |> 
   rename("Course Section ID" = "Section ID") |> select(-"Section Number") |> select(-"...5")
@@ -63,18 +224,13 @@ course_reg_data <- course_reg_data |> group_by(course, `Reporting Year`) |>
   mutate(yearly_capacity = sum(`Section Capacity`, na.rm = TRUE))
 ```
 
-As shown in the code, the data was grouped by course (so every course that was cross-listed is grouped with it's cross-listed course) and for each year, then added together to get the total enrollment. The mutate function allows that total enrollment to show up for each data point. The non-xlist data set was unchanged except for the course variable that would be used to help unite the data set. 
+As shown in the code, the data was grouped by course (so every course that was cross-listed is grouped with it's cross-listed course) and for each year, then added together to get the total enrollment. The mutate function allows that total enrollment to show up for each data point. The non-xlist data set was unchanged except for the course variable that would be used to help unite the data set.
 
 After the dataset had accurate enrollment numbers for how it would be used within the app, the next step was to wrangle the data so there was only one data point for each course every year. This data set needed to include both fall_enrollment and spring_enrollment for that year along with the yearly_enrollment. It also needed to include the enrollment for each section every semester, so a sectioned graph could be made. After this was done by grouping the data in different ways and summing the enrollment for different time periods and sections, the dataset was usable within the app.
 
 The dataset used within the app is shown below:
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 course_reg_data <- read_csv("course_reg_data.csv")
 head(course_reg_data)
 ```
-
-## App Graphics (Static Versions)
-
-
-
-
