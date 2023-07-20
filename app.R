@@ -224,6 +224,7 @@ server <- function(input, output, session) {
           course_app_semester <- course_app_semester |> filter(term != "2020_FA") |> filter(term != "2021_SP")
           course_app_section <- course_app_section |> filter(term != "2020_FA") |> filter(term != "2021_SP")
         }
+        course_app_semester <- course_app_semester |> mutate(term = fct_reorder(term, order, .desc = FALSE))
         plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
           geom_line() +
           geom_point(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
@@ -375,21 +376,20 @@ server <- function(input, output, session) {
       course_app_semester <- left_join(course_app_semester, course_app_section3,
                                        by = c("term"))
       course_app_semester <- course_app_semester |> mutate(avg_section = round(semester_enrolled / total_sections))
-      full_terms <- full_terms |> mutate(year = parse_number(term),
-                                                           semester = case_when(
-                                                             str_detect(term, "FA") ~ "FA",
-                                                             str_detect(term, "SP") ~ "SP"
-                                                           ))
-      full_terms <- full_terms |> filter(!is.na(year))
-      full_terms <- full_terms |> mutate(order = case_when(
-        semester == "FA" ~ year + 1,
-        semester == "SP" ~ year))
       if ("omit COVID-19 years" %in% input$openseats_settings){
         course_app_semester <- course_app_semester |> filter(term != "2020_FA") |> filter(term != "2021_SP")
       }
       course_app_semester <- course_app_semester |> 
-        complete(term = full_terms$term) |>
-        mutate(term = fct_reorder(term, full_terms$order, .desc = FALSE))
+        complete(term = full_terms$term) 
+      course_app_semester <- course_app_semester |> mutate(year = parse_number(term),
+             semester = case_when(
+               str_detect(term, "FA") ~ "FA",
+               str_detect(term, "SP") ~ "SP"
+             )) |> filter(!is.na(year))
+      course_app_semester <- course_app_semester |> mutate(order = case_when(
+        semester == "FA" ~ year + 1,
+        semester == "SP" ~ year))
+      course_app_semester <- course_app_semester |> mutate(term = fct_reorder(term, order, .desc = FALSE))
       plot1 <- ggplot(data = course_app_semester, aes(x = term, label = total_sections, label2 = avg_section)) +
         geom_col(aes(y = semester_enrolled, fill = ifelse(semester_enrolled >= semester_capacity - total_sections, "Full Enrollment", "Enrollment"))) +
         geom_col(aes(y = semester_capacity, fill = "Enrollment Capacity"), alpha = 0.5) +
