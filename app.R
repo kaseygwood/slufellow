@@ -14,7 +14,6 @@ course_reg_section <- course_reg_section |>
   mutate(year = reporting_year)
 course_reg_section <- course_reg_section |> 
   unite("term", c(semester_year, semester))
-
 ui <- fluidPage(
   theme = bslib::bs_theme(bootswatch = "sandstone"),
   tabsetPanel(
@@ -319,6 +318,9 @@ server <- function(input, output, session) {
         }
         course_app_semester <- course_app_semester |> 
           mutate(term = fct_reorder(term, order, .desc = FALSE))
+        course_app_semester <- course_app_semester |>
+          filter(term != "2020_FA",
+                 term != "2021_SP")
         plot1 <- ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
           geom_line() +
           geom_point(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 1)) +
@@ -414,10 +416,8 @@ server <- function(input, output, session) {
                              by= c("reporting_year"))
         course_app_yearly <- course_app_yearly |> 
           mutate(avg_section = round(yearly_enrolled / total_sections))
-        if ("omit COVID-19 years" %in% input$sections){
-          course_app_yearly <- course_app_yearly |> 
+        course_app_yearly <- course_app_yearly |> 
             filter(reporting_year != 2020)
-        }
         plot2 <-ggplot(data = course_app_yearly, aes(x = as.character(reporting_year), y = yearly_enrolled, group = 1, 
                                                      label = total_sections, label2 = avg_section)) +
           geom_line() +
@@ -435,36 +435,22 @@ server <- function(input, output, session) {
   output$discipline_plot <- renderPlotly({
     if (input$discipline %in% course_reg_data$Subject){
       subject_data <- course_reg_data |> 
-        mutate(level = case_when(
-        as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 1000 - 1,
-        as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100))
-      subject_data <- subject_data |> 
         filter(Subject %in% input$discipline)
       subject_data <- subject_data |> 
-        group_by(level, reporting_year) |> 
+        group_by(`Course Level1`, reporting_year) |> 
         summarise(enrolled = sum(yearly_enrolled))
-      subject_data <- subject_data |> 
-        filter(level <= 3)
       section_total <- course_reg_section |> 
-        mutate(level = case_when(
-        as.numeric(`Course Number`) >= 1000 ~ as.numeric(`Course Number`) %/% 1000 - 1,
-        as.numeric(`Course Number`) < 1000 ~ as.numeric(`Course Number`) %/% 100))
-      section_total <- section_total |> 
         filter(Subject %in% input$discipline)
       section_total <- section_total |> 
-        group_by(year, level) |> 
+        group_by(year, `Course Level1`) |> 
         summarise(total_sections = n()) |> 
         rename("reporting_year" = "year")
-      section_total <- section_total |> 
-        filter(level <=3)
-      subject_data <- left_join(subject_data, section_total, by = c("reporting_year", "level"))
+      subject_data <- left_join(subject_data, section_total, by = c("reporting_year", "Course Level1"))
       subject_data <- subject_data |> 
         mutate(avg_section = round((enrolled/total_sections)))
-      if ("omit COVID-19 years" %in% input$discipline_settings){
-        subject_data <- subject_data |> 
+      subject_data <- subject_data |> 
           filter(reporting_year != 2020)
-      }
-      subject_plot<- ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(level), 
+      subject_plot<- ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor(`Course Level1`), 
                                                      label = total_sections, label2 = avg_section)) +
         geom_line() +
         geom_point() +
@@ -504,11 +490,9 @@ server <- function(input, output, session) {
                                        by = c("term"))
       course_app_semester <- course_app_semester |> 
         mutate(avg_section = round(semester_enrolled / total_sections))
-      if ("omit COVID-19 years" %in% input$openseats_settings){
-        course_app_semester <- course_app_semester |> 
+      course_app_semester <- course_app_semester |> 
           filter(term != "2020_FA") |> 
           filter(term != "2021_SP")
-      }
       course_app_semester <- course_app_semester |> 
         complete(term = full_terms$term) 
       course_app_semester <- course_app_semester |> 
@@ -523,12 +507,15 @@ server <- function(input, output, session) {
         semester == "SP" ~ year))
       course_app_semester <- course_app_semester |> 
         mutate(term = fct_reorder(term, order, .desc = FALSE))
+      course_app_semester <- course_app_semester |>
+        filter(term != "2020_FA",
+               term != "2021_SP")
       plot1 <- ggplot(data = course_app_semester, aes(x = term, 
                                                       label = total_sections, label2 = avg_section)) +
         geom_col(aes(y = semester_enrolled, fill = case_when(semester_enrolled > semester_capacity ~ "Over Enrollment",
                                                            semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Enrollment (full)",
                                                            semester_enrolled < semester_capacity ~ "Enrollment"))) +
-        geom_col(aes(y = semester_capacity, fill = case_when(semester_enrolled > semester_capacity ~ "Over Enrollment", 
+        geom_col(aes(y = semester_capacity, fill = case_when(semester_enrolled > semester_capacity ~ "Enrollment (full)", 
                                                            semester_enrolled < semester_capacity - total_sections ~"Empty Seats",
                                                            semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Empty Seats"
         )),alpha = 0.5) +
@@ -559,15 +546,15 @@ server <- function(input, output, session) {
                            by= c("reporting_year"))
       course_app_yearly <- course_app_yearly |> 
         mutate(avg_section = round((yearly_enrolled/total_sections)))
-      if ("omit COVID-19 years" %in% input$openseats_settings){
-        course_app_yearly <- course_app_yearly |> 
+      course_app_yearly <- course_app_yearly |> 
           filter(reporting_year != 2020)
-      }
       course_reg_fix <- course_reg_data |> 
         filter(!is.na(reporting_year))
       full_years <- data.frame(reporting_year = min(course_reg_fix$reporting_year):max(course_reg_fix$reporting_year))
       course_app_yearly <- course_app_yearly |> 
         complete(reporting_year = full_years$reporting_year)
+      course_app_yearly <- course_app_yearly |>
+        filter(reporting_year != 2020)
       plot1 <- ggplot(data = course_app_yearly, aes(x = as.character(reporting_year), 
                                                     label = total_sections, label2 = avg_section)) +
         geom_col(aes(y = yearly_enrolled, fill = case_when(yearly_enrolled > yearly_capacity ~ "Over Enrollment",

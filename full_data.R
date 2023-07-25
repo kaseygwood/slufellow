@@ -8,11 +8,16 @@ course_capacity <- course_capacity |> rename("Course Section Name" = "Section Na
   rename("Course Section ID" = "Section ID") |> select(-"Section Number") |> select(-"...5")
 
 course_reg_full <- left_join(course_reg_full, course_capacity, by = "Course Section ID")
+course_reg_full <- course_reg_full |> 
+  filter(is.na(`Schedule Type`))
+View(course_reg_full)
 course_reg_data <- course_reg_full |>
   select(`Acad Year Term`, `Reporting Year`, `Course ID`, `Course Name`, 
          `Subject`, `Course Number`, `Course Title`, `Enrolled`, 
          `xlist Primary Course`, `xlist Section1`, `xlist Section2`, 
-         `xlist Section3`, `xlist Section4`, `Section Number`, `Section Capacity`) |> arrange(desc(`Reporting Year`))
+         `xlist Section3`, `xlist Section4`, `Section Number`, `Section Capacity`, `Course Level1`) |> arrange(desc(`Reporting Year`))
+course_reg_data <- course_reg_data |> filter(`Acad Year Term` != "2020FA",
+                                             `Acad Year Term` != "2021SP")
 course_reg_data <- course_reg_data |> separate(col = `Acad Year Term`, into = c("reporting_year", "semester"), sep = -2) 
 
 
@@ -35,11 +40,18 @@ course_reg_data <- course_reg_data |> unite("section",c(semester, `Section Numbe
 # fixing cross-listed courses
 
 course_reg_xlist <- course_reg_data |> drop_na(`xlist Section1`)
-course_reg_xlist <- course_reg_xlist |> group_by(`Course Title`, section, `Reporting Year`) |> mutate(enrolled = sum(Enrolled)) |> select(-Enrolled) |> rename("Enrolled" = "enrolled") |>
+course_reg_xlist <- course_reg_xlist |> 
+  group_by(`Course Title`, section, `Reporting Year`) |> 
+  mutate(enrolled = sum(Enrolled)) |> 
+  select(-Enrolled) |> 
+  rename("Enrolled" = "enrolled") |>
   unite("course", c(`Course Name`, `Course Title`), sep = ": ")
-course_reg_noxlist <- course_reg_data |> filter(is.na(`xlist Section1`)) |> unite("course", c(`Course Name`, `Course Title`), sep = ": ")
+course_reg_noxlist <- course_reg_data |> 
+  filter(is.na(`xlist Section1`)) |> 
+  unite("course", c(`Course Name`, `Course Title`), sep = ": ")
 course_reg_data <- full_join(course_reg_xlist, course_reg_noxlist)
-course_reg_data <- course_reg_data |> group_by(course, `Reporting Year`) |>
+course_reg_data <- course_reg_data |> 
+  group_by(course, `Reporting Year`) |>
   mutate(yearly_capacity = sum(`Section Capacity`, na.rm = TRUE))
 View(course_reg_data)
 course_reg_wide <-course_reg_data |>
@@ -73,7 +85,8 @@ course_reg_data <- course_reg_data |>
             across(starts_with("SP_"), ~sum(unlist(.), na.rm = TRUE)),
             `Course Number` = first(`Course Number`),
             Subject = first(Subject),
-            yearly_capacity = first(yearly_capacity))
+            yearly_capacity = first(yearly_capacity),
+            `Course Level1` = first(`Course Level1`))
 
 course_reg_data <- course_reg_data |>
   group_by(course, reporting_year) |>
@@ -128,11 +141,13 @@ course_reg_data <- course_reg_data |>
             FA_23 = first(FA_23),
             `Course Number` = first(`Course Number`),
             Subject = first(Subject),
-            yearly_capacity = first(yearly_capacity)) 
+            yearly_capacity = first(yearly_capacity),
+            `Course Level1` = first(`Course Level1`)) 
 
 full_course_reg_data <- left_join(course_reg_data, course_reg_capacity, by=c("course", "reporting_year"))
 View(full_course_reg_data)
 write_csv(full_course_reg_data, "full_course_reg_data.csv")
+
 #course_reg_data_yearly <- course_reg_data |> group_by(course, reporting_year) |>
 # summarize(Enrolled = sum(Enrolled),
 #         course = first(course)) |>
