@@ -35,7 +35,8 @@ library(ggthemes)
 course_reg_data <- read_csv("course_reg_data.csv")
 small <- course_reg_data |> select(1:5)
 header <- head(small, 5)
-kable(header, col.names = colnames(header), format = "html", align = c("l", "l", "l"), colspec = c("L|L|L"))
+kable(header |> mutate(course = str_extract(course, pattern = "CS-140")),
+      col.names = colnames(header), format = "html", align = c("l", "l", "l"), colspec = c("L|L|L"))
 ```
 
 ## Goals
@@ -45,18 +46,18 @@ kable(header, col.names = colnames(header), format = "html", align = c("l", "l",
     2.  Visualize enrollment by discipline (subject).
 2.  Visualize open seats in courses by reporting year and semester.
 3.  Strengthen overall R-language skills through encompassing this within a shiny app.
-    1.  Create an interactive and easy to use app for public use.
+4. Create an interactive and easy-to-use app for internal or public use.
 
 # Wrangling The Data
 
-### Issues Addressed in the Data
+### Sample of Some Issues in the Data
 -   Cross-listed course enrollment refers to the combined total enrollment of all cross-listed courses.
--   COVID-19 section numbers are off, therefore Fall 2020, Spring 2021, and Summer 2021 are omitted from the data.
+-   COVID-19 section numbers are off in the 2020-2021 Academic Year; therefore Fall 2020, Spring 2021, and Summer 2021 are omitted from the data.
 
 # App Figures
 
 
-```{r standard-plot, fig.align='center', fig.cap='Graphing enrollment over the years by semester. Sections are included cumulatively and labeled.', fig.height=4.5, message=FALSE, warning=FALSE, out.width='80%'}
+```{r standard-plot, fig.align='center', fig.cap='Graphing enrollment over the years by semester. Sections are included cumulatively and labeled so that we can see the number of sections and approximate size of each section.', fig.height=4.5, message=FALSE, warning=FALSE, out.width='80%'}
 course_reg_data <- read_csv("full_course_reg_data.csv")
 course_reg_section <- course_reg_data |> 
   pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
@@ -107,8 +108,9 @@ ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 
           labs(title = glue::glue("Enrollment for STAT-113: Applied Statistics"),
                x = "Semester",
                  y = "Enrollment",
-                 colour = "Semester") + 
-          theme_minimal() +
+                 colour = "Semester",
+               caption = "Data from 2020_FA and 2021_SP omitted (Covid)") + 
+          theme_minimal(base_size = 21) +
           theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
                 axis.text.y = element_text(hjust = 1))
 
@@ -117,12 +119,12 @@ ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 
 
 ```{r standard-plot-2, fig.align='center', fig.cap='Graphing enrollment by discipline and grouped by level of course. Math enrollment is shown in the graph above.', fig.height=4.5, message=FALSE, warning=FALSE, out.width='80%'}
       subject_data <- course_reg_data |> 
-        filter(Subject == "MATH")
+        filter(Subject == "CS")
       subject_data <- subject_data |> 
         group_by(`Course Level1`, reporting_year) |> 
         summarise(enrolled = sum(yearly_enrolled))
       section_total <- course_reg_section |> 
-        filter(Subject == "MATH")
+        filter(Subject == "CS")
       section_total <- section_total |> 
         group_by(year, `Course Level1`) |> 
         summarise(total_sections = n()) |> 
@@ -137,69 +139,67 @@ ggplot(data = subject_data, aes(x = reporting_year, y = enrolled, color = factor
         geom_line() +
         geom_point() +
         scale_y_continuous(limits = c(0, max(subject_data$enrolled))) +
-        labs(title = glue::glue("Enrollment for Math"),
+        labs(title = glue::glue("Enrollment for CS"),
               color = "Course Level",
              x = "Year",
              y = "Enrollment") +
-        theme_minimal()
+        theme_minimal() +
+  scale_colour_viridis_d(option = "B")
 ```
 
 
 ```{r standard-plot-3, fig.align='center', fig.cap='Visualizing open seats in courses. This graph depicts enrollment compared to the capacity of the course.', fig.height=4.5, message=FALSE, warning=FALSE, out.width='80%'}
-      course_app_semester2 <- course_reg_data |> 
-        rename("FA" = "fall_enrolled",
-               "SP" = "spring_enrolled")|>
-        pivot_longer(cols = c(FA, SP),names_to = "semester", values_to = "semester_enrolled") |> 
-        mutate(year = ifelse(semester == "SP", reporting_year+1, reporting_year)) |>
-        unite("term", c(year, semester)) 
-      full_terms <- tibble(term = unique(course_app_semester2$term))
-      course_app_semester2 <- course_app_semester2 |>
+course_app_semester2 <- course_reg_data |> 
+  rename("FA" = "fall_enrolled",
+         "SP" = "spring_enrolled") |>
+  pivot_longer(cols = c(FA, SP), names_to = "semester", values_to = "semester_enrolled") |> 
+  mutate(year = ifelse(semester == "SP", reporting_year + 1, reporting_year)) |>
+  unite("term", c(year, semester)) 
+
+full_terms <- tibble(term = unique(course_app_semester2$term))
+
+course_app_semester2 <- course_app_semester2 |>
         filter(course == "CS-140: Intro to Computer Program" ) |>
-        filter(semester_enrolled != 0)
-      course_app_semester2 <- course_app_semester2 |> 
+        filter(semester_enrolled != 0) |> 
         mutate(semester_capacity = if_else(str_detect(term, "FA"), fall_capacity, spring_capacity))
-      course_app_section2 <- course_reg_section |> 
+
+course_app_section2 <- course_reg_section |> 
         group_by(course, term) |> 
-        mutate(cumulative_enrolled = cumsum(enrolled))
-      course_app_section2 <- course_app_section2 |> 
+        mutate(cumulative_enrolled = cumsum(enrolled)) |>
         filter(course == "CS-140: Intro to Computer Program" )|>
         filter(enrolled != 0)
-      course_app_section3 <- course_app_section2 |> 
+
+course_app_section3 <- course_app_section2 |> 
         group_by(term) |> 
         summarise(total_sections = n())
-      course_app_semester2 <- left_join(course_app_semester2, course_app_section3,
-                                       by = c("term"))
-      course_app_semester2 <- course_app_semester2 |> 
-        mutate(avg_section = round(semester_enrolled / total_sections))
-      course_app_semester2 <- course_app_semester2 |> 
+
+course_app_semester2 <- left_join(course_app_semester2, course_app_section3,
+                                       by = c("term")) |> 
+        mutate(avg_section = round(semester_enrolled / total_sections)) |> 
           filter(term != "2020_FA") |> 
-          filter(term != "2021_SP")
-      course_app_semester2 <- course_app_semester2 |> 
-        complete(term = full_terms$term) 
-      course_app_semester2 <- course_app_semester2 |> 
+          filter(term != "2021_SP") |> 
+        complete(term = full_terms$term) |> 
         mutate(year = parse_number(term),
              semester = case_when(
                str_detect(term, "FA") ~ "FA",
                str_detect(term, "SP") ~ "SP")) |> 
-        filter(!is.na(year))
-      course_app_semester2 <- course_app_semester2 |> 
+        filter(!is.na(year)) |> 
         mutate(order = case_when(
         semester == "FA" ~ year + 1,
-        semester == "SP" ~ year))
-      course_app_semester2 <- course_app_semester2 |> 
-        mutate(term = fct_reorder(term, order, .desc = FALSE))
-      course_app_semester2 <- course_app_semester2 |>
+        semester == "SP" ~ year)) |> 
+        mutate(term = fct_reorder(term, order, .desc = FALSE)) |>
         filter(term != "2020_FA",
                term != "2021_SP")
-ggplot(data = course_app_semester2, aes(x = term, 
-                                                      label = total_sections, label2 = avg_section)) +
-        geom_col(aes(y = semester_enrolled, fill = case_when(semester_enrolled > semester_capacity ~ "Over Enrollment",
-                                                           semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Enrollment (full)",
-                                                           semester_enrolled < semester_capacity ~ "Enrollment"))) +
-        geom_col(aes(y = semester_capacity, fill = case_when(semester_enrolled > semester_capacity ~ "Enrollment (full)", 
-                                                           semester_enrolled < semester_capacity - total_sections ~"Empty Seats",
-                                                           semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Empty Seats"
-        )),alpha = 0.5) +
+
+ggplot(data = course_app_semester2,
+       aes(x = term, label = total_sections, label2 = avg_section)) +
+  geom_col(aes(y = semester_enrolled,
+               fill = case_when(semester_enrolled > semester_capacity ~ "Over Enrollment",
+                                semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Enrollment (full)",
+                                semester_enrolled < semester_capacity ~ "Enrollment"))) +
+        geom_col(aes(y = semester_capacity, fill = case_when(semester_enrolled > semester_capacity ~ "Enrollment (full)",
+                                                             semester_enrolled < semester_capacity - total_sections ~"Empty Seats", 
+                                                             semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Empty Seats")), alpha = 0.5) +
         scale_fill_manual(values = c("Empty Seats" = "lightgrey",
                                      "Enrollment"="darkgrey",
                                      "Enrollment (full)" = "lightpink",
@@ -207,12 +207,53 @@ ggplot(data = course_app_semester2, aes(x = term,
                           breaks = c("Empty Seats", "Enrollment", "Enrollment (full)", "Over Enrollment"),
                           labels = c("Empty Seats", "Enrollment", "Enrollment (full)", "Over Enrollment")) +
         labs(
-          title = glue::glue("Course Capacity for CS-140: Intro to Computer Program"),
+          title = glue::glue("Course Capacity for STAT-113: Applied Statistics"),
           x = "Year",
           y = "Enrollment",
           fill = "") + 
-        theme_minimal()+
-        theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust=1))
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+
+course_app_test <- course_app_semester2 |>
+  mutate(full_ind = case_when(semester_enrolled > semester_capacity ~ "Full",
+                                semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Full",
+                                semester_enrolled < semester_capacity ~ "Not Full")) |>
+  select(term, total_sections, avg_section, semester_enrolled, semester_capacity, full_ind) |>
+  mutate(overenrollments = if_else(semester_capacity < semester_enrolled,
+                                         true = semester_enrolled - semester_capacity,
+                                         false = 0),
+         empty_seats = if_else(semester_capacity > semester_enrolled,
+                                     true = semester_capacity - semester_enrolled,
+                                     false = 0)) |>
+  relocate(overenrollments, empty_seats, full_ind) |>
+    rename(enrollments = semester_enrolled) |>
+  pivot_longer(c(overenrollments, empty_seats, enrollments),
+               names_to = "Bar Code",
+               values_to = "n_students") |>
+  rename(`Colour Code` = `Bar Code`,
+         `Full?` = full_ind) |>
+  mutate(`Colour Code` = fct_relevel(`Colour Code`,
+                                     c("empty_seats", "overenrollments",
+                                       "enrollments"))) 
+
+
+
+ggplot(data = course_app_test,
+       aes(x = term, label = total_sections, label2 = avg_section)) +
+  geom_col(aes(y = n_students,
+               fill = `Colour Code`,
+               linetype = `Full?`),
+           colour = "grey50") +
+  scale_fill_manual(values = c("lightgrey", "red", "lightpink")) + 
+  scale_linetype_manual(values = c("solid", "blank")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(title = glue::glue("Course Capacity for STAT-113: Applied Statistics"),
+       x = "Year",
+       y = "Students") +
+  guides(fill = guide_legend(override.aes = list(pattern = "none"), order = 1),
+         linetype = guide_legend(override.aes = list(fill = "white")), order = 2)
 ```
 
 
@@ -244,7 +285,7 @@ knitr::include_graphics("../enrollment.png")
 
 # Acknowledgements
 
--   I would like to thank Christine Zimmerman for providing the dataset.
+-   I would like to thank Christine Zimmerman for providing the data.
 
--   And I would like to thank Professor Matt Higham for advising me throughout this process.
+-   I would like to thank Professor Matt Higham for advising me throughout this process.
 
