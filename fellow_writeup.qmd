@@ -259,3 +259,5 @@ The dataset used within the app is shown below:
 course_reg_data <- read_csv("course_reg_data.csv")
 head(course_reg_data)
 ```
+
+App Tutorial Link: https://youtu.be/Z0DFfgEXze8

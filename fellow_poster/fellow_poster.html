@@ -24,69 +24,7 @@ Google fonts api stuff
 
 
 
-<style type="text/css">pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-    color: #aaaaaa;
-  }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
-code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #7d9029; } /* Attribute */
-code span.bn { color: #40a070; } /* BaseN */
-code span.bu { color: #008000; } /* BuiltIn */
-code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4070a0; } /* Char */
-code span.cn { color: #880000; } /* Constant */
-code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code span.dt { color: #902000; } /* DataType */
-code span.dv { color: #40a070; } /* DecVal */
-code span.er { color: #ff0000; font-weight: bold; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #40a070; } /* Float */
-code span.fu { color: #06287e; } /* Function */
-code span.im { color: #008000; font-weight: bold; } /* Import */
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code span.op { color: #666666; } /* Operator */
-code span.ot { color: #007020; } /* Other */
-code span.pp { color: #bc7a00; } /* Preprocessor */
-code span.sc { color: #4070a0; } /* SpecialChar */
-code span.ss { color: #bb6688; } /* SpecialString */
-code span.st { color: #4070a0; } /* String */
-code span.va { color: #19177c; } /* Variable */
-code span.vs { color: #4070a0; } /* VerbatimString */
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */</style>
+
 
 <style>
 @page {
@@ -112,14 +50,14 @@ padding: 0cm;
 width: 45in;
 height: calc(38in * 0.15);
 overflow: hidden;
-background-color: #0b4545;
-border: 0 solid #0b4545;
+background-color: black;
+border: 0 solid white;
 }
 .logo_left {
 float: left;
 width: 10%;
 height: 100%;
-background-color: #0b4545;
+background-color: black;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -128,7 +66,7 @@ justify-content: center;
 float: right;
 width: 10%;
 height: 100%;
-background-color: #0b4545;
+background-color: black;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -149,24 +87,24 @@ font-family: Palatino;
 }
 /* unvisited link */
 a:link {
-color: #cc0000;
+color: red;
 }
 .mybreak {
   break-before: column;
 }
 /* visited link */
 a:visited {
-color: #cc0000;
+color: red;
 }
 
 /* mouse over link */
 a:hover {
-color: #cc0000;
+color: red;
 }
 
 /* selected link */
 a:active {
-color: #cc0000;
+color: red;
 }
 .poster_body {
 -webkit-column-count: 3; /* Chrome, Safari, Opera */
@@ -181,9 +119,9 @@ column-rule-width: 1mm;
 -webkit-column-rule-style: dashed;
 -moz-column-rule-style: dashed;
 column-rule-style: dashed;
--webkit-column-rule-color: #0b4545;
--moz-column-rule-color: #0b4545;
-column-rule-color: #0b4545;
+-webkit-column-rule-color: black;
+-moz-column-rule-color: black;
+column-rule-color: black;
 column-gap: 1em;
 padding-left: 0.5em;
 padding-right: 0.5em;
@@ -205,7 +143,7 @@ padding-bottom: calc(38in * 0.01);
 background-color: #ffffff;
 }
 .poster_title h3 {
-color: #ffffff;
+color: white;
 font-size: 50pt;
 margin: 0;
 border: 0;
@@ -233,8 +171,8 @@ margin-bottom: 0;
 text-align: center;
 color: #FFFFFF;
 font-size: 65pt;
-border: 2mm solid #0b4545;
-background-color: #0b4545;
+border: 2mm solid black;
+background-color: black;
 border-radius: 4mm 0mm;
 margin-top: 2mm;
 margin-bottom: 2mm;
@@ -286,8 +224,8 @@ padding-bottom: 3mm;
 code {
 font-size: 1em;
 font-family: monospace;
-background-color: #00808024;
-color: #0b4545;
+background-color: white24;
+color: black;
 padding: 1.2mm;
 border-radius: 2mm;
 }
@@ -359,18 +297,117 @@ font-size: 20pt;
 <div class='poster_body'>
 <div id="about-the-data" class="section level1">
 <h1>About The Data</h1>
-<p>St. Lawrence University registration data currently spans from 2014 to 2022.</p>
-<div id="key-variables-used" class="section level3">
-<h3>Key Variables Used</h3>
-<ul>
-<li><p>Course Title</p></li>
-<li><p>Course Number</p></li>
-<li><p>Reporting Year</p></li>
-<li><p>Section Number</p></li>
-<li><p>Section Capacity</p></li>
-<li><p>Enrolled</p></li>
-<li><p>Academic Year Term</p></li>
-</ul>
+<p>St. Lawrence University registration data currently spans from 2014 to 2022. With around 2,250 students enrolled on campus each year, there are many disciplines, course options, and routes to take for new students. This data contains all of those choices students have made in the past in order to better understand enrollment at St. Lawrence University.</p>
+<div id="data-snippet" class="section level3">
+<h3>Data Snippet</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+course
+</th>
+<th style="text-align:left;">
+reporting_year
+</th>
+<th style="text-align:left;">
+yearly_enrolled
+</th>
+<th style="text-align:left;">
+fall_enrolled
+</th>
+<th style="text-align:left;">
+spring_enrolled
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+CS-140: Intro to Computer Program
+</td>
+<td style="text-align:left;">
+2014
+</td>
+<td style="text-align:left;">
+144
+</td>
+<td style="text-align:left;">
+72
+</td>
+<td style="text-align:left;">
+72
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CS-140: Intro to Computer Program
+</td>
+<td style="text-align:left;">
+2015
+</td>
+<td style="text-align:left;">
+147
+</td>
+<td style="text-align:left;">
+75
+</td>
+<td style="text-align:left;">
+72
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CS-140: Intro to Computer Program
+</td>
+<td style="text-align:left;">
+2016
+</td>
+<td style="text-align:left;">
+149
+</td>
+<td style="text-align:left;">
+77
+</td>
+<td style="text-align:left;">
+72
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CS-140: Intro to Computer Program
+</td>
+<td style="text-align:left;">
+2017
+</td>
+<td style="text-align:left;">
+172
+</td>
+<td style="text-align:left;">
+94
+</td>
+<td style="text-align:left;">
+78
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CS-140: Intro to Computer Program
+</td>
+<td style="text-align:left;">
+2018
+</td>
+<td style="text-align:left;">
+190
+</td>
+<td style="text-align:left;">
+120
+</td>
+<td style="text-align:left;">
+70
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="goals" class="section level2">
 <h2>Goals</h2>
@@ -393,49 +430,59 @@ font-size: 20pt;
 <div id="issues-addressed-in-the-data" class="section level3">
 <h3>Issues Addressed in the Data</h3>
 <ul>
-<li><p>Cross-listed course enrollment refers to the combined total enrollment of all cross-listed courses.</p></li>
-<li><p>COVID-19 section numbers are off, therefore there are options to omit seeing these years on the graphics.</p></li>
+<li>Cross-listed course enrollment refers to the combined total enrollment of all cross-listed courses.</li>
+<li>COVID-19 section numbers are off, therefore there are options to omit seeing these years on the graphics.</li>
 </ul>
 </div>
 </div>
 <div id="app-figures" class="section level1">
 <h1>App Figures</h1>
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:standard-plot"></span>
-<img src="fellow_poster_files/figure-html/standard-plot-1.png" alt="Great figure!" width="80%" />
+<img src="fellow_poster_files/figure-html/standard-plot-1.png" alt="Graphing enrollment over the years by semester. Sections are included cumulatively and labeled." width="80%" />
 <p class="caption">
-Figure 1: Great figure!
+Figure 1: Graphing enrollment over the years by semester. Sections are included cumulatively and labeled.
 </p>
 </div>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> iris</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="at">x =</span> data<span class="sc">$</span>Sepal.Length, </span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">y =</span> data<span class="sc">$</span>Sepal.Width, </span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> data<span class="sc">$</span>Species,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">19</span>, </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;Sepal Length (cm)&quot;</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Sepal Width (cm)&quot;</span>)</span></code></pre></div>
-<div class="figure"><span style="display:block;" id="fig:morefigs"></span>
-<img src="fellow_poster_files/figure-html/morefigs-1.png" alt="Amazing, right?!" width="80%" />
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:standard-plot-2"></span>
+<img src="fellow_poster_files/figure-html/standard-plot-2-1.png" alt="Graphing enrollment by discipline and grouped by level of course. Math enrollment is shown in the graph above." width="80%" />
 <p class="caption">
-Figure 2: Amazing, right?!
+Figure 2: Graphing enrollment by discipline and grouped by level of course. Math enrollment is shown in the graph above.
+</p>
+</div>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:standard-plot-3"></span>
+<img src="fellow_poster_files/figure-html/standard-plot-3-1.png" alt="Visualizing open seats in courses. This graph depicts enrollment compared to the capacity of the course." width="80%" />
+<p class="caption">
+Figure 3: Visualizing open seats in courses. This graph depicts enrollment compared to the capacity of the course.
 </p>
 </div>
 </div>
 <div id="constructing-the-app" class="section level1">
 <h1>Constructing The App</h1>
-<p>Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus <span class="citation">(Thorne 2019)</span>.</p>
+<p>These graphics have been placed in an interactive shiny app, where the user has many options to visualize data. The user can choose many things depending on the tab of the app that they are using:</p>
+<ol style="list-style-type: decimal">
+<li>The user chooses whether they want to view the graphs by year or by semester.</li>
+<li>The user may change three different settings that will change the course options:</li>
+</ol>
+<ul>
+<li>Select the Subject</li>
+<li>Minimum Course Capacity</li>
+<li>Minimum Years Offered</li>
+</ul>
+<ol start="3" style="list-style-type: decimal">
+<li>Then the user may choose the course they would like the display on the app (these options will be limited due to the settings chosen above)</li>
+<li>The user may choose to omit COVID-19 years.</li>
+</ol>
+<p>An example of the UI is shown below:
+<img src="../enrollment.png" width="80%" style="display: block; margin: auto;" /></p>
 </div>
 <div id="next-steps-and-conclusion" class="section level1">
 <h1>Next Steps and Conclusion</h1>
-<p>Try <code>posterdown</code> out! Hopefully you like it!</p>
+<ul>
+<li>Predicting enrollment in future years based on previous enrollment of prerequisites.</li>
+</ul>
 </div>
-<div id="references" class="section level1 unnumbered">
+<div id="references" class="section level1">
 <h1>References</h1>
-<div id="refs" class="references csl-bib-body hanging-indent">
-<div id="ref-R-posterdown" class="csl-entry">
-Thorne, Brent. 2019. <em>Posterdown: Generate PDF Conference Posters Using r Markdown</em>. <a href="https://github.com/brentthorne/posterdown">https://github.com/brentthorne/posterdown</a>.
-</div>
-</div>
 </div>
 </div>
 </div>
