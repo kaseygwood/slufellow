@@ -11,7 +11,7 @@ logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/mas
 logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
 output: 
   posterdown::posterdown_html:
-    self_contained: false
+    self_contained: true
 bibliography: packages.bib
 primary_colour: black
 secondary_colour: white
@@ -206,7 +206,8 @@ These graphics have been placed in an interactive shiny app, where the user has 
 3. Then the user may choose the course they would like the display on the app (these options will be limited due to the settings chosen above)
 4. The user may choose to omit COVID-19 years.
 
-An example of the UI is shown below: 
+An example of the UI is shown below:
+
 ```{r standard-figure, fig.align='center', fig.height=6, message=FALSE, warning=FALSE, out.width='80%'}
 library(knitr)
 knitr::include_graphics("../enrollment.png")
