@@ -573,7 +573,7 @@ server <- function(input, output, session) {
         geom_col(aes(y = yearly_enrolled, fill = case_when(yearly_enrolled > yearly_capacity ~ "Over Enrollment",
                                                            yearly_enrolled >= yearly_capacity - total_sections & yearly_enrolled <= yearly_capacity ~ "Enrollment (full)",
                                                            yearly_enrolled < yearly_capacity ~ "Enrollment"))) +
-        geom_col(aes(y = yearly_capacity, fill = case_when(yearly_enrolled > yearly_capacity ~ "Over Enrollment", 
+        geom_col(aes(y = yearly_capacity, fill = case_when(yearly_enrolled > yearly_capacity ~ "Enrollment (full)", 
                                                            yearly_enrolled < yearly_capacity - total_sections ~"Empty Seats",
                                                            yearly_enrolled >= yearly_capacity - total_sections & yearly_enrolled <= yearly_capacity ~ "Empty Seats"
                                                            )) ,alpha = 0.5) +
