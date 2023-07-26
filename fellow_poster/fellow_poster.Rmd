@@ -134,7 +134,7 @@ ggplot(data = course_app_semester, aes(x = term, y = semester_enrolled, group = 
 ```
 
 
-```{r standard-plot-2, fig.align='center', fig.cap='Graphing enrollment by discipline and grouped by level of course. Math enrollment is shown in the graph above.', fig.height=4.5, message=FALSE, warning=FALSE, out.width='80%'}
+```{r standard-plot-2, fig.align='center', fig.cap='Graphing enrollment by discipline and grouped by level of course. Computer science enrollment is shown in the graph above.', fig.height=4.5, message=FALSE, warning=FALSE, out.width='80%'}
 subject_data <- course_reg_data |> 
   filter(Subject == "CS") |> 
   group_by(`Course Level1`, reporting_year) |> 

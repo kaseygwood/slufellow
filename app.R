@@ -5,15 +5,15 @@ library(plotly)
 library(tidyverse)
 
 course_reg_data <- read_csv("full_course_reg_data.csv")
+
 course_reg_section <- course_reg_data |> 
   pivot_longer((c(6:43)), names_to = "semester", values_to = "enrolled") |>
   filter(enrolled != 0) |>
-  mutate(semester_year = ifelse(str_detect(semester, "SP"), reporting_year+1, reporting_year))
-course_reg_section <- course_reg_section |> 
+  mutate(semester_year = ifelse(str_detect(semester, "SP"), reporting_year+1, reporting_year)) |> 
   separate(col = semester, into = c("semester", "section"), sep = "_") |> 
-  mutate(year = reporting_year)
-course_reg_section <- course_reg_section |> 
+  mutate(year = reporting_year) |> 
   unite("term", c(semester_year, semester))
+
 ui <- fluidPage(
   theme = bslib::bs_theme(bootswatch = "sandstone"),
   tabsetPanel(
@@ -110,23 +110,18 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   observeEvent(input$years_offered, {
     filter_subject <- course_reg_section |> 
-      group_by(course) |> 
-      mutate(total_offered = n())
-    filter_subject <- course_reg_section |> 
       group_by(year, course) |> 
       summarise(total_sections = n(),
                 yearly_capacity = first(yearly_capacity),
                 avg_capacity = round(yearly_capacity/total_sections)) |>
-      rename("reporting_year" = "year")
-    filter_subject <- filter_subject |> 
+      rename("reporting_year" = "year") |> 
       group_by(course) |> mutate(total_years_offered = n())
-    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year"))
-    filter_subject <- filter_subject |> 
+    
+    filter_subject <- left_join(course_reg_data, filter_subject, by=c("course", "reporting_year")) |> 
       group_by(course) |> 
       summarise(full_avg_capacity = round(sum(avg_capacity, na.rm = TRUE)/n()),
                 Subject = first(Subject),
-                total_years_offered =first(total_years_offered))
-    filter_subject <- filter_subject |> 
+                total_years_offered =first(total_years_offered)) |> 
       filter(full_avg_capacity >= input$capacity) |> 
       filter(Subject == input$select_subject) |> 
       filter(total_years_offered >= input$years_offered)
@@ -459,7 +454,8 @@ server <- function(input, output, session) {
               color = "Course Level",
              x = "Year",
              y = "Enrollment") +
-        theme_minimal()
+        theme_minimal()+
+        scale_colour_viridis_d(option = "B")
       ggplotly(subject_plot, tooltip = c("label", "y", "label2"))
     }
   }) # end discipline plotly
@@ -513,11 +509,11 @@ server <- function(input, output, session) {
       plot1 <- ggplot(data = course_app_semester, aes(x = term, 
                                                       label = total_sections, label2 = avg_section)) +
         geom_col(aes(y = semester_enrolled, fill = case_when(semester_enrolled > semester_capacity ~ "Over Enrollment",
-                                                           semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Enrollment (full)",
-                                                           semester_enrolled < semester_capacity ~ "Enrollment"))) +
+                                                             semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Enrollment (full)",
+                                                             semester_enrolled < semester_capacity ~ "Enrollment"))) +
         geom_col(aes(y = semester_capacity, fill = case_when(semester_enrolled > semester_capacity ~ "Enrollment (full)", 
-                                                           semester_enrolled < semester_capacity - total_sections ~"Empty Seats",
-                                                           semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Empty Seats"
+                                                             semester_enrolled < semester_capacity - total_sections ~"Empty Seats",
+                                                             semester_enrolled >= semester_capacity - total_sections & semester_enrolled <= semester_capacity ~ "Empty Seats"
         )),alpha = 0.5) +
         scale_fill_manual(values = c("Empty Seats" = "lightgrey",
                                      "Enrollment"="darkgrey",
@@ -563,7 +559,7 @@ server <- function(input, output, session) {
         geom_col(aes(y = yearly_capacity, fill = case_when(yearly_enrolled > yearly_capacity ~ "Enrollment (full)", 
                                                            yearly_enrolled < yearly_capacity - total_sections ~"Empty Seats",
                                                            yearly_enrolled >= yearly_capacity - total_sections & yearly_enrolled <= yearly_capacity ~ "Empty Seats"
-                                                           )) ,alpha = 0.5) +
+        )) ,alpha = 0.5) +
         scale_fill_manual(values = c("Enrollment (full)" = "lightpink",
                                      "Over Enrollment" = "red",
                                      "Enrollment"="darkgrey", 
